@@ -28,8 +28,9 @@ jobs:
         run: |
           yes | /usr/local/lib/android/sdk/cmdline-tools/latest/bin/sdkmanager --sdk_root=/usr/local/lib/android/sdk --licenses || true
 
-      - name: Restaurar Keystore
-        run: echo "${{ secrets.KEYSTORE_B64 }}" | base64 -d > release.keystore
+      - name: Restaurar Keystore (Com Limpeza)
+        run: |
+          echo "${{ secrets.KEYSTORE_B64 }}" | tr -d '\r\n ' | base64 -d > release.keystore
 
       - name: Gerar App Bundle (AAB) Assinado
         run: |
