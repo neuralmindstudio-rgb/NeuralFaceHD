@@ -1,4 +1,4 @@
-name: Build Android App (FIX-DEPENDENCIAS)
+name: Build Android App (ACEITANDO-LICENCAS)
 on:
   push:
     branches: [ main ]
@@ -12,7 +12,6 @@ jobs:
       - name: Instalar Dependencias do Sistema
         run: |
           sudo apt update
-          # Adicionei libunwind-dev para resolver o conflito do gstreamer
           sudo apt install -y python3-pip build-essential git python3 python3-dev \
           ffmpeg libsdl2-dev libsdl2-image-dev libsdl2-mixer-dev libsdl2-ttf-dev \
           libportmidi-dev libswscale-dev libavformat-dev libavcodec-dev zlib1g-dev \
@@ -35,8 +34,11 @@ jobs:
 
       - name: Gerar App Bundle (AAB)
         run: |
+          # Define o caminho das macros e aceita as licenças da Google
           export ACLOCAL_PATH=/usr/share/aclocal
           mkdir -p ~/.android && touch ~/.android/repositories.cfg
+          
+          # O comando 'yes |' responde "y" (sim) para todas as perguntas de licença
           yes | buildozer android release
         env:
           APP_ANDROID_KEYSTORE: release.keystore
@@ -44,10 +46,10 @@ jobs:
           APP_ANDROID_KEYALIAS: ${{ secrets.KEY_ALIAS }}
           APP_ANDROID_KEYALIAS_PASS: ${{ secrets.KEY_ALIAS_PASSWORD }}
 
-      - name: Upload do App
+      - name: Upload do App e da Keystore
         uses: actions/upload-artifact@v4
         with:
-          name: NeuralFaceHD_Android_AAB
+          name: NeuralFaceHD_Android_Final
           path: |
             bin/*.aab
             release.keystore
