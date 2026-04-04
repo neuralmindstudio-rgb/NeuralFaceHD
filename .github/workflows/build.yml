@@ -9,13 +9,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Instalar Dependencias
+      - name: Instalar Dependencias do Sistema
         run: |
           sudo apt update
           sudo apt install -y python3-pip build-essential git python3 python3-dev \
           ffmpeg libsdl2-dev libsdl2-image-dev libsdl2-mixer-dev libsdl2-ttf-dev \
           libportmidi-dev libswscale-dev libavformat-dev libavcodec-dev zlib1g-dev \
-          libgstreamer1.0-dev openjdk-17-jdk ant autoconf automake libtool pkg-config
+          libgstreamer1.0-dev openjdk-17-jdk ant autoconf automake libtool pkg-config \
+          libltdl-dev
 
       - name: Configurar Python
         uses: actions/setup-python@v5
@@ -33,7 +34,8 @@ jobs:
 
       - name: Gerar App Bundle (AAB) Assinado
         run: |
-          # Cria a pasta de licenças e aceita todas automaticamente antes de rodar o buildozer
+          # Garante que as macros do libtool fiquem visíveis para o autoreconf
+          export ACLOCAL_PATH=/usr/share/aclocal
           mkdir -p ~/.android && touch ~/.android/repositories.cfg
           yes | buildozer android release
         env:
