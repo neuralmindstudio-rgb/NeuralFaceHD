@@ -34,7 +34,9 @@ jobs:
 
       - name: Gerar App Bundle (AAB) Assinado
         run: |
-          # Garante que as macros do libtool fiquem visíveis para o autoreconf
+          # Limpa vestígios de builds anteriores
+          buildozer android clean
+          # Garante que as macros do libtool fiquem visíveis
           export ACLOCAL_PATH=/usr/share/aclocal
           mkdir -p ~/.android && touch ~/.android/repositories.cfg
           yes | buildozer android release
