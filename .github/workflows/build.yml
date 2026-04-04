@@ -1,4 +1,4 @@
-name: Build Android App
+name: Build Android App (Auto-Key)
 on:
   push:
     branches: [ main ]
@@ -9,10 +9,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Instalar Dependencias do Sistema
+      - name: Instalar Dependencias
         run: |
           sudo apt update
-          sudo apt install -y python3-pip build-essential git python3 python3-dev ffmpeg libsdl2-dev libsdl2-image-dev libsdl2-mixer-dev libsdl2-ttf-dev libportmidi-dev libswscale-dev libavformat-dev libavcodec-dev zlib1g-dev libgstreamer1.0-dev gstreamer1.0-plugins-base gstreamer1.0-plugins-good gstreamer1.0-plugins-bad gstreamer1.0-plugins-ugly gstreamer1.0-libav gstreamer1.0-tools gstreamer1.0-x gstreamer1.0-alsa gstreamer1.0-gl gstreamer1.0-gtk3 gstreamer1.0-pulseaudio libsqlite3-dev sqlite3 bzip2 libbz2-dev libssl-dev openssl libgdbm-dev libgdbm-compat-dev liblzma-dev libreadline-dev uuid-dev libffi-dev tk-dev openjdk-17-jdk
+          sudo apt install -y python3-pip build-essential git python3 python3-dev ffmpeg libsdl2-dev libsdl2-image-dev libsdl2-mixer-dev libsdl2-ttf-dev libportmidi-dev libswscale-dev libavformat-dev libavcodec-dev zlib1g-dev libgstreamer1.0-dev openjdk-17-jdk
 
       - name: Configurar Python
         uses: actions/setup-python@v5
@@ -24,25 +24,24 @@ jobs:
           pip install --upgrade pip
           pip install buildozer cython==0.29.33
 
-      - name: Aceitar Licencas Android (Resolve Erro 100)
+      - name: Criar Nova Keystore (Automático)
         run: |
-          yes | /usr/local/lib/android/sdk/cmdline-tools/latest/bin/sdkmanager --sdk_root=/usr/local/lib/android/sdk --licenses || true
+          # Aqui o robô cria a chave sozinho com as senhas dos seus Secrets
+          keytool -genkey -v -keystore release.keystore -alias ${{ secrets.KEY_ALIAS }} -keyalg RSA -keysize 2048 -validity 10000 -storepass ${{ secrets.KEYSTORE_PASSWORD }} -keypass ${{ secrets.KEY_ALIAS_PASSWORD }} -dname "CN=Anderson, OU=NeuralMind, O=Studio, L=Lages, S=SC, C=BR"
 
-      - name: Restaurar Keystore (Montagem em Partes)
-        run: |
-          # Junta as partes, limpa sujeira e decodifica
-          echo "${{ secrets.PARTE_1 }}${{ secrets.PARTE_2 }}" | sed 's/[^a-zA-Z0-9+/=]//g' | base64 -d > release.keystore
-
-      - name: Gerar App Bundle (AAB) Assinado
+      - name: Gerar App Bundle (AAB)
         run: |
           export APP_ANDROID_KEYSTORE=release.keystore
           export APP_ANDROID_KEYSTORE_PASS=${{ secrets.KEYSTORE_PASSWORD }}
           export APP_ANDROID_KEYALIAS=${{ secrets.KEY_ALIAS }}
           export APP_ANDROID_KEYALIAS_PASS=${{ secrets.KEY_ALIAS_PASSWORD }}
+          # O buildozer vai usar a chave que o robô acabou de criar
           buildozer android release
 
-      - name: Upload do AAB Pronto
+      - name: Upload do App e da Nova Chave
         uses: actions/upload-artifact@v4
         with:
-          name: NeuralFaceHD-Release
-          path: bin/*.aab
+          name: NeuralFaceHD_Final_e_Chave
+          path: |
+            bin/*.aab
+            release.keystore
