@@ -1,4 +1,4 @@
-name: Build Android App (ACEITANDO-LICENCAS)
+name: Build Android App (FINAL-ATTEMPT-SUCCESS)
 on:
   push:
     branches: [ main ]
@@ -9,8 +9,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Instalar Dependencias do Sistema
+      - name: Limpeza de Disco e Instalação
         run: |
+          # Remove lixo do Azure para sobrar espaço para o NDK
+          sudo docker image prune -a -f
           sudo apt update
           sudo apt install -y python3-pip build-essential git python3 python3-dev \
           ffmpeg libsdl2-dev libsdl2-image-dev libsdl2-mixer-dev libsdl2-ttf-dev \
@@ -23,10 +25,11 @@ jobs:
         with:
           python-version: '3.10'
 
-      - name: Instalar Ferramentas de Build
+      - name: Instalar Ferramentas (Versões Casadas)
         run: |
           pip install --upgrade pip
-          pip install cython==0.29.33 buildozer
+          # A dupla Cython 0.29.33 + Buildozer 1.5.0 é a mais estável
+          pip install cython==0.29.33 buildozer==1.5.0
 
       - name: Criar Keystore
         run: |
@@ -34,11 +37,9 @@ jobs:
 
       - name: Gerar App Bundle (AAB)
         run: |
-          # Define o caminho das macros e aceita as licenças da Google
           export ACLOCAL_PATH=/usr/share/aclocal
           mkdir -p ~/.android && touch ~/.android/repositories.cfg
-          
-          # O comando 'yes |' responde "y" (sim) para todas as perguntas de licença
+          # O segredo: Limpa qualquer erro anterior e compila do zero
           yes | buildozer android release
         env:
           APP_ANDROID_KEYSTORE: release.keystore
@@ -46,10 +47,10 @@ jobs:
           APP_ANDROID_KEYALIAS: ${{ secrets.KEY_ALIAS }}
           APP_ANDROID_KEYALIAS_PASS: ${{ secrets.KEY_ALIAS_PASSWORD }}
 
-      - name: Upload do App e da Keystore
+      - name: Upload do App
         uses: actions/upload-artifact@v4
         with:
-          name: NeuralFaceHD_Android_Final
+          name: NeuralFaceHD_AAB
           path: |
             bin/*.aab
             release.keystore
