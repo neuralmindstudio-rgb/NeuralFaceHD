@@ -1,4 +1,4 @@
-name: Build Android App (Auto-NDK-Fix)
+name: Build Android App (FINAL-BOSS-FIX)
 on:
   push:
     branches: [ main ]
@@ -9,14 +9,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Instalar Dependencias do Sistema
+      - name: Instalar Dependencias do Sistema e Corrigir Libcrypt
         run: |
           sudo apt update
+          # O segredo está aqui: instalando a libxcrypt-compat para o NDK r25b funcionar no Ubuntu 24.04
           sudo apt install -y python3-pip build-essential git python3 python3-dev \
           ffmpeg libsdl2-dev libsdl2-image-dev libsdl2-mixer-dev libsdl2-ttf-dev \
           libportmidi-dev libswscale-dev libavformat-dev libavcodec-dev zlib1g-dev \
           libgstreamer1.0-dev openjdk-17-jdk ant autoconf automake libtool pkg-config \
-          libltdl-dev
+          libltdl-dev libxcrypt-compat
 
       - name: Configurar Python
         uses: actions/setup-python@v5
@@ -34,14 +35,10 @@ jobs:
 
       - name: Gerar App Bundle (AAB) Assinado
         run: |
-          # Força o JAVA 17 e as macros do Libtool (O que resolveu o erro de 5 min)
           export JAVA_HOME=$JAVA_HOME_17_X64
           export ACLOCAL_PATH=/usr/share/aclocal
-          
-          # Aceita licenças
           mkdir -p ~/.android && touch ~/.android/repositories.cfg
-          
-          # Deixa o Buildozer gerenciar o NDK sozinho (Ele vai ler o seu .spec)
+          # Agora o Buildozer vai rodar com a biblioteca compatível no sistema
           yes | buildozer android release
         env:
           APP_ANDROID_KEYSTORE: release.keystore
