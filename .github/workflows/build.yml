@@ -30,12 +30,13 @@ jobs:
 
       - name: Criar Nova Keystore (Automático)
         run: |
+          # Gera a chave no servidor do GitHub com suas senhas dos Secrets
           keytool -genkey -v -keystore release.keystore -alias ${{ secrets.KEY_ALIAS }} -keyalg RSA -keysize 2048 -validity 10000 -storepass ${{ secrets.KEYSTORE_PASSWORD }} -keypass ${{ secrets.KEY_ALIAS_PASSWORD }} -dname "CN=Anderson, OU=NeuralMind, O=Studio, L=Lages, S=SC, C=BR"
 
       - name: Gerar App Bundle (AAB) Assinado
         run: |
-          # Define o JAVA_HOME explicitamente para evitar erro de versão do compilador
-          export JAVA_HOME=$JAVA_HOME_17_X64
+          # Força o uso do Java 17 e resolve as macros do Libtool
+          export JAVA_HOME=/usr/lib/jvm/temurin-17-jdk-amd64
           export ACLOCAL_PATH=/usr/share/aclocal
           mkdir -p ~/.android && touch ~/.android/repositories.cfg
           yes | buildozer android release
