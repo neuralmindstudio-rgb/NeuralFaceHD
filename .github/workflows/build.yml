@@ -1,4 +1,4 @@
-name: Build Android App (Auto-Key)
+name: Build Android App (FINAL-FORCED)
 on:
   push:
     branches: [ main ]
@@ -9,14 +9,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Instalar Dependencias do Sistema
+      - name: Instalar Dependencias
         run: |
           sudo apt update
           sudo apt install -y python3-pip build-essential git python3 python3-dev \
           ffmpeg libsdl2-dev libsdl2-image-dev libsdl2-mixer-dev libsdl2-ttf-dev \
           libportmidi-dev libswscale-dev libavformat-dev libavcodec-dev zlib1g-dev \
           libgstreamer1.0-dev openjdk-17-jdk ant autoconf automake libtool pkg-config \
-          libltdl-dev
+          libltdl-dev unzip zip
 
       - name: Configurar Python
         uses: actions/setup-python@v5
@@ -28,20 +28,24 @@ jobs:
           pip install --upgrade pip
           pip install buildozer cython==0.29.33
 
-      - name: Criar Nova Keystore (Automático)
+      - name: Pre-Instalar NDK 23b (Evita erro de versao)
+        run: |
+          mkdir -p ~/.buildozer/android/platform
+          curl -L https://dl.google.com/android/repository/android-ndk-r23b-linux-x86_64.zip -o ndk.zip
+          unzip -q ndk.zip -d ~/.buildozer/android/platform
+          mv ~/.buildozer/android/platform/android-ndk-r23b ~/.buildozer/android/platform/android-ndk
+
+      - name: Criar Nova Keystore
         run: |
           keytool -genkey -v -keystore release.keystore -alias ${{ secrets.KEY_ALIAS }} -keyalg RSA -keysize 2048 -validity 10000 -storepass ${{ secrets.KEYSTORE_PASSWORD }} -keypass ${{ secrets.KEY_ALIAS_PASSWORD }} -dname "CN=Anderson, OU=NeuralMind, O=Studio, L=Lages, S=SC, C=BR"
 
-      - name: Gerar App Bundle (AAB) Assinado
+      - name: Gerar App Bundle (AAB)
         run: |
-          # FORÇANDO AS VERSÕES CORRETAS
           export JAVA_HOME=/usr/lib/jvm/temurin-17-jdk-amd64
           export ACLOCAL_PATH=/usr/share/aclocal
-          
-          # Aceita as licenças antes de começar
+          # Aponta o Buildozer para o NDK que baixamos manualmente
+          export P4A_ndk_directory=~/.buildozer/android/platform/android-ndk
           mkdir -p ~/.android && touch ~/.android/repositories.cfg
-          
-          # Roda o build direto (o buildozer vai baixar o que está no .spec)
           yes | buildozer android release
         env:
           APP_ANDROID_KEYSTORE: release.keystore
