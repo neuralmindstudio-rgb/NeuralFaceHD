@@ -26,17 +26,18 @@ jobs:
 
       - name: Criar Nova Keystore (Automático)
         run: |
-          # Aqui o robô cria a chave sozinho com as senhas dos seus Secrets
           keytool -genkey -v -keystore release.keystore -alias ${{ secrets.KEY_ALIAS }} -keyalg RSA -keysize 2048 -validity 10000 -storepass ${{ secrets.KEYSTORE_PASSWORD }} -keypass ${{ secrets.KEY_ALIAS_PASSWORD }} -dname "CN=Anderson, OU=NeuralMind, O=Studio, L=Lages, S=SC, C=BR"
 
-      - name: Gerar App Bundle (AAB)
+      - name: Gerar App Bundle (AAB) Assinado
         run: |
-          export APP_ANDROID_KEYSTORE=release.keystore
-          export APP_ANDROID_KEYSTORE_PASS=${{ secrets.KEYSTORE_PASSWORD }}
-          export APP_ANDROID_KEYALIAS=${{ secrets.KEY_ALIAS }}
-          export APP_ANDROID_KEYALIAS_PASS=${{ secrets.KEY_ALIAS_PASSWORD }}
-          # O buildozer vai usar a chave que o robô acabou de criar
-          buildozer android release
+          # Cria a pasta de licenças e aceita todas automaticamente antes de rodar o buildozer
+          mkdir -p ~/.android && touch ~/.android/repositories.cfg
+          yes | buildozer android release
+        env:
+          APP_ANDROID_KEYSTORE: release.keystore
+          APP_ANDROID_KEYSTORE_PASS: ${{ secrets.KEYSTORE_PASSWORD }}
+          APP_ANDROID_KEYALIAS: ${{ secrets.KEY_ALIAS }}
+          APP_ANDROID_KEYALIAS_PASS: ${{ secrets.KEY_ALIAS_PASSWORD }}
 
       - name: Upload do App e da Nova Chave
         uses: actions/upload-artifact@v4
