@@ -34,7 +34,8 @@ jobs:
 
       - name: Gerar App Bundle (AAB) Assinado
         run: |
-          # Aceita licenças e define o caminho das macros
+          # Define o JAVA_HOME explicitamente para evitar erro de versão do compilador
+          export JAVA_HOME=$JAVA_HOME_17_X64
           export ACLOCAL_PATH=/usr/share/aclocal
           mkdir -p ~/.android && touch ~/.android/repositories.cfg
           yes | buildozer android release
