@@ -12,12 +12,12 @@ jobs:
       - name: Instalar Dependencias do Sistema e Corrigir Libcrypt
         run: |
           sudo apt update
-          # O segredo está aqui: instalando a libxcrypt-compat para o NDK r25b funcionar no Ubuntu 24.04
+          # Alterado para libcrypt1 (o nome oficial no Ubuntu 24.04)
           sudo apt install -y python3-pip build-essential git python3 python3-dev \
           ffmpeg libsdl2-dev libsdl2-image-dev libsdl2-mixer-dev libsdl2-ttf-dev \
           libportmidi-dev libswscale-dev libavformat-dev libavcodec-dev zlib1g-dev \
           libgstreamer1.0-dev openjdk-17-jdk ant autoconf automake libtool pkg-config \
-          libltdl-dev libxcrypt-compat
+          libltdl-dev libcrypt1
 
       - name: Configurar Python
         uses: actions/setup-python@v5
