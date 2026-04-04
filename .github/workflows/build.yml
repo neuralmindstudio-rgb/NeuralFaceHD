@@ -1,4 +1,4 @@
-name: Build Android App (AUTO-LICENSE-FIX)
+name: Build Android App (LICENSE-BYPASS)
 on:
   push:
     branches: [ main ]
@@ -9,7 +9,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Limpeza e Instalacao
+      - name: Instalacao e Limpeza
         run: |
           sudo docker image prune -a -f
           sudo apt update
@@ -36,11 +36,12 @@ jobs:
       - name: Gerar App Bundle (AAB)
         run: |
           export ACLOCAL_PATH=/usr/share/aclocal
+          
+          # CRUCIAL: Prepara as pastas e aceita licenças ANTES de rodar o buildozer
           mkdir -p ~/.android && touch ~/.android/repositories.cfg
           
-          # FORÇA A ACEITAÇÃO DAS LICENÇAS ANTES DO BUILDOZER
-          # Isso evita que o processo trave nos 16 minutos
-          yes | buildozer android release
+          # Roda o Buildozer. Ele vai baixar o SDK e, se pedir licença, o 'yes' agora está dentro de um loop mais seguro
+          bash -c "while true; do echo y; sleep 1; done | buildozer android release"
         env:
           APP_ANDROID_KEYSTORE: release.keystore
           APP_ANDROID_KEYSTORE_PASS: ${{ secrets.KEYSTORE_PASSWORD }}
