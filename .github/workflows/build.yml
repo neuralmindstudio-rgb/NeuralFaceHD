@@ -1,44 +1,41 @@
-name: Build Android App (FINAL-BOSS-FIX)
+name: Build Android App (VERSAO-ESTAVEL-GARANTIDA)
 on:
   push:
     branches: [ main ]
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    # MUDANÇA CRUCIAL: Usando Ubuntu 22.04 (Muito mais estável para Kivy)
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
 
-      - name: Instalar Dependencias do Sistema e Corrigir Libcrypt
+      - name: Instalar Dependencias do Sistema
         run: |
           sudo apt update
-          # Alterado para libcrypt1 (o nome oficial no Ubuntu 24.04)
           sudo apt install -y python3-pip build-essential git python3 python3-dev \
           ffmpeg libsdl2-dev libsdl2-image-dev libsdl2-mixer-dev libsdl2-ttf-dev \
           libportmidi-dev libswscale-dev libavformat-dev libavcodec-dev zlib1g-dev \
-          libgstreamer1.0-dev openjdk-17-jdk ant autoconf automake libtool pkg-config \
-          libltdl-dev libcrypt1
+          libgstreamer1.0-dev openjdk-17-jdk ant autoconf automake libtool pkg-config
 
       - name: Configurar Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: '3.10' # Python 3.10 é o porto seguro para o Buildozer
 
-      - name: Instalar Buildozer e Cython
+      - name: Instalar Ferramentas de Build
         run: |
           pip install --upgrade pip
-          pip install buildozer cython==0.29.33
+          pip install cython==0.29.33 buildozer
 
-      - name: Criar Nova Keystore
+      - name: Criar Keystore
         run: |
           keytool -genkey -v -keystore release.keystore -alias ${{ secrets.KEY_ALIAS }} -keyalg RSA -keysize 2048 -validity 10000 -storepass ${{ secrets.KEYSTORE_PASSWORD }} -keypass ${{ secrets.KEY_ALIAS_PASSWORD }} -dname "CN=Anderson, OU=NeuralMind, O=Studio, L=Lages, S=SC, C=BR"
 
-      - name: Gerar App Bundle (AAB) Assinado
+      - name: Gerar App Bundle (AAB)
         run: |
-          export JAVA_HOME=$JAVA_HOME_17_X64
           export ACLOCAL_PATH=/usr/share/aclocal
           mkdir -p ~/.android && touch ~/.android/repositories.cfg
-          # Agora o Buildozer vai rodar com a biblioteca compatível no sistema
           yes | buildozer android release
         env:
           APP_ANDROID_KEYSTORE: release.keystore
@@ -46,10 +43,10 @@ jobs:
           APP_ANDROID_KEYALIAS: ${{ secrets.KEY_ALIAS }}
           APP_ANDROID_KEYALIAS_PASS: ${{ secrets.KEY_ALIAS_PASSWORD }}
 
-      - name: Upload do App e da Nova Chave
+      - name: Upload do App
         uses: actions/upload-artifact@v4
         with:
-          name: NeuralFaceHD_Final_e_Chave
+          name: NeuralFaceHD_Android_AAB
           path: |
             bin/*.aab
             release.keystore
