@@ -28,10 +28,10 @@ jobs:
         run: |
           yes | /usr/local/lib/android/sdk/cmdline-tools/latest/bin/sdkmanager --sdk_root=/usr/local/lib/android/sdk --licenses || true
 
-      - name: Restaurar Keystore (Modo Forçado)
+      - name: Restaurar Keystore (Montagem em Partes)
         run: |
-          # O comando sed remove absolutamente tudo que não for caractere válido de Base64
-          echo "${{ secrets.KEYSTORE_B64 }}" | sed 's/[^a-zA-Z0-9+/=]//g' | base64 -d > release.keystore
+          # Junta as partes, limpa sujeira e decodifica
+          echo "${{ secrets.PARTE_1 }}${{ secrets.PARTE_2 }}" | sed 's/[^a-zA-Z0-9+/=]//g' | base64 -d > release.keystore
 
       - name: Gerar App Bundle (AAB) Assinado
         run: |
