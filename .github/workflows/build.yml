@@ -1,11 +1,10 @@
-name: Build Android App (VERSAO-ESTAVEL-GARANTIDA)
+name: Build Android App (FIX-DEPENDENCIAS)
 on:
   push:
     branches: [ main ]
 
 jobs:
   build:
-    # MUDANÇA CRUCIAL: Usando Ubuntu 22.04 (Muito mais estável para Kivy)
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
@@ -13,15 +12,17 @@ jobs:
       - name: Instalar Dependencias do Sistema
         run: |
           sudo apt update
+          # Adicionei libunwind-dev para resolver o conflito do gstreamer
           sudo apt install -y python3-pip build-essential git python3 python3-dev \
           ffmpeg libsdl2-dev libsdl2-image-dev libsdl2-mixer-dev libsdl2-ttf-dev \
           libportmidi-dev libswscale-dev libavformat-dev libavcodec-dev zlib1g-dev \
-          libgstreamer1.0-dev openjdk-17-jdk ant autoconf automake libtool pkg-config
+          libgstreamer1.0-dev openjdk-17-jdk ant autoconf automake libtool pkg-config \
+          libunwind-dev
 
       - name: Configurar Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.10' # Python 3.10 é o porto seguro para o Buildozer
+          python-version: '3.10'
 
       - name: Instalar Ferramentas de Build
         run: |
