@@ -1,4 +1,4 @@
-name: Build Android App (FORCED-NDK-FIX)
+name: Build Android App (Auto-NDK-Fix)
 on:
   push:
     branches: [ main ]
@@ -9,14 +9,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Instalar Dependencias
+      - name: Instalar Dependencias do Sistema
         run: |
           sudo apt update
           sudo apt install -y python3-pip build-essential git python3 python3-dev \
           ffmpeg libsdl2-dev libsdl2-image-dev libsdl2-mixer-dev libsdl2-ttf-dev \
           libportmidi-dev libswscale-dev libavformat-dev libavcodec-dev zlib1g-dev \
           libgstreamer1.0-dev openjdk-17-jdk ant autoconf automake libtool pkg-config \
-          libltdl-dev unzip zip curl
+          libltdl-dev
 
       - name: Configurar Python
         uses: actions/setup-python@v5
@@ -28,31 +28,20 @@ jobs:
           pip install --upgrade pip
           pip install buildozer cython==0.29.33
 
-      - name: Pre-Instalar NDK 23b (Link Direto)
-        run: |
-          mkdir -p ~/.buildozer/android/platform
-          # Link oficial do Google para o NDK 23b (Linux x64)
-          curl -L "https://dl.google.com/android/repository/android-ndk-r23b-linux-x86_64.zip" -o ndk.zip
-          unzip -q ndk.zip -d ~/.buildozer/android/platform
-          mv ~/.buildozer/android/platform/android-ndk-r23b ~/.buildozer/android/platform/android-ndk
-          rm ndk.zip
-
       - name: Criar Nova Keystore
         run: |
-          # Gera a chave no servidor usando as senhas dos seus Secrets do GitHub
           keytool -genkey -v -keystore release.keystore -alias ${{ secrets.KEY_ALIAS }} -keyalg RSA -keysize 2048 -validity 10000 -storepass ${{ secrets.KEYSTORE_PASSWORD }} -keypass ${{ secrets.KEY_ALIAS_PASSWORD }} -dname "CN=Anderson, OU=NeuralMind, O=Studio, L=Lages, S=SC, C=BR"
 
-      - name: Gerar App Bundle (AAB)
+      - name: Gerar App Bundle (AAB) Assinado
         run: |
-          # Força o uso do Java 17 e resolve macros do Libtool
-          export JAVA_HOME=/usr/lib/jvm/temurin-17-jdk-amd64
+          # Força o JAVA 17 e as macros do Libtool (O que resolveu o erro de 5 min)
+          export JAVA_HOME=$JAVA_HOME_17_X64
           export ACLOCAL_PATH=/usr/share/aclocal
           
-          # Força o motor do Buildozer a usar o NDK que baixamos manualmente
-          export P4A_ndk_directory=$HOME/.buildozer/android/platform/android-ndk
-          export ANDROID_NDK_HOME=$HOME/.buildozer/android/platform/android-ndk
-          
+          # Aceita licenças
           mkdir -p ~/.android && touch ~/.android/repositories.cfg
+          
+          # Deixa o Buildozer gerenciar o NDK sozinho (Ele vai ler o seu .spec)
           yes | buildozer android release
         env:
           APP_ANDROID_KEYSTORE: release.keystore
