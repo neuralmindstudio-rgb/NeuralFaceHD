@@ -1,4 +1,4 @@
-name: Build Android App (FORCA-BRUTA-FINAL)
+name: Build Android App (FINAL-SUCCESS)
 on:
   push:
     branches: [ main ]
@@ -9,10 +9,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Instalar Dependencias Críticas
+      - name: Instalar Dependencias
         run: |
           sudo apt update
-          # Adicionei libcrypt1 e libunwind-dev para evitar o erro de compilação do Python
           sudo apt install -y python3-pip build-essential git python3 python3-dev \
           ffmpeg libsdl2-dev libsdl2-image-dev libsdl2-mixer-dev libsdl2-ttf-dev \
           libportmidi-dev libswscale-dev libavformat-dev libavcodec-dev zlib1g-dev \
@@ -24,19 +23,15 @@ jobs:
         with:
           python-version: '3.10'
 
-      - name: Instalar Ferramentas
+      - name: Ferramentas de Build
         run: |
           pip install --upgrade pip
           pip install cython==0.29.33 buildozer==1.5.0
 
-      - name: Criar Keystore
-        run: |
-          keytool -genkey -v -keystore release.keystore -alias ${{ secrets.KEY_ALIAS }} -keyalg RSA -keysize 2048 -validity 10000 -storepass ${{ secrets.KEYSTORE_PASSWORD }} -keypass ${{ secrets.KEY_ALIAS_PASSWORD }} -dname "CN=Anderson, OU=NeuralMind, O=Studio, L=Lages, S=SC, C=BR"
-
       - name: Gerar App Bundle (AAB)
         run: |
           export ACLOCAL_PATH=/usr/share/aclocal
-          # Aceita licenças e roda o build de forma limpa
+          # Aceita licenças de forma persistente antes de iniciar
           yes | buildozer android release
         env:
           APP_ANDROID_KEYSTORE: release.keystore
