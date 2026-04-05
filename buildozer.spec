@@ -5,57 +5,47 @@ title = Neural Face HD
 # (str) Package name
 package.name = neuralfacehd
 
-# (str) Package domain (needed for android packaging)
+# (str) Package domain
 package.domain = org.neuralmind
 
 # (str) Source code where the main.py live
 source.dir = .
 
 # (list) Source files to include
-source.include_exts = py,png,jpg,kv,atlas,json
+source.include_exts = py,png,jpg,kv,atlas,json,ttf
 
-# --- AQUI ESTAVA O ERRO: Mudei para 'version' ---
+# Versão do App
 version = 1.0.0
-
-# (int) Android version code
 version.code = 1
 
-# (list) Application requirements
-requirements = python3,kivy==2.3.0,kivymd,requests,urllib3,charset-normalizer,idna,certifi,plyer
+# --- REQUISITOS CORRIGIDOS ---
+# Adicionei ffpyplayer e pyjnius porque seu código usa vídeo e autoclass
+requirements = python3,kivy==2.3.0,kivymd==1.2.0,pillow,requests,urllib3,charset-normalizer,idna,certifi,plyer,ffpyplayer,pyjnius
 
 # (list) Supported orientations
 orientation = portrait
 
 # (list) Permissions
-android.permissions = INTERNET, WRITE_EXTERNAL_STORAGE, READ_EXTERNAL_STORAGE, CAMERA, MANAGE_EXTERNAL_STORAGE
+android.permissions = INTERNET, WRITE_EXTERNAL_STORAGE, READ_EXTERNAL_STORAGE, CAMERA
 
-# (int) Target Android API
-android.api = 34
-
-# (int) Minimum API
+# --- ESTABILIDADE GITHUB ACTIONS ---
+# API 33 e NDK 23b são a combinação que NÃO TRAVA nos 17 minutos
+android.api = 33
 android.minapi = 21
-
-# (str) Android NDK version
-android.ndk = 25b
+android.ndk = 23b
 
 # (bool) Use --private data storage
 android.private_storage = True
 
-# (str) Android entry point
-android.entrypoint = main.py
+# (list) Android archs (Garante que rode em celulares novos e antigos)
+android.archs = arm64-v8a, armeabi-v7a
+
+# (bool) Aceitar licenças automaticamente
+android.accept_sdk_license = True
 
 # (list) Android build states
 android.release_artifact = aab
 
-# (str) Skip update (Saves time in GitHub Actions)
-android.skip_update = False
-
-# (bool) copy library to project (set to True for complex libraries)
-android.copy_libs = True
-
 [buildozer]
-# (int) Log level (2 = debug para vermos tudo no GitHub)
 log_level = 2
-
-# (int) Display warning if buildozer is run as root
 warn_on_root = 1
