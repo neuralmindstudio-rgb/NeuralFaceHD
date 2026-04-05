@@ -1,4 +1,4 @@
-name: Build Android App (FINAL-PRECISION)
+name: Build Android App (ESTABILIDADE-TOTAL)
 on:
   push:
     branches: [ main ]
@@ -9,15 +9,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Instalacao e Limpeza
+      - name: Instalacao de Dependencias
         run: |
-          sudo docker image prune -a -f
           sudo apt update
           sudo apt install -y python3-pip build-essential git python3 python3-dev \
           ffmpeg libsdl2-dev libsdl2-image-dev libsdl2-mixer-dev libsdl2-ttf-dev \
           libportmidi-dev libswscale-dev libavformat-dev libavcodec-dev zlib1g-dev \
           libgstreamer1.0-dev openjdk-17-jdk ant autoconf automake libtool pkg-config \
-          libunwind-dev
+          libunwind-dev libcrypt1
 
       - name: Configurar Python
         uses: actions/setup-python@v5
@@ -38,8 +37,7 @@ jobs:
           export ACLOCAL_PATH=/usr/share/aclocal
           mkdir -p ~/.android && touch ~/.android/repositories.cfg
           
-          # O SEGREDO: Aceita licenças ANTES de começar e encerra o comando
-          # Assim não teremos loop de 1 hora e meia
+          # Aceita licenças de forma limpa e inicia o build
           yes | buildozer android release
         env:
           APP_ANDROID_KEYSTORE: release.keystore
@@ -50,7 +48,7 @@ jobs:
       - name: Upload do App
         uses: actions/upload-artifact@v4
         with:
-          name: NeuralFaceHD_AAB_Final
+          name: NeuralFaceHD_AAB
           path: |
             bin/*.aab
             release.keystore
