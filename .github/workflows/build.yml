@@ -1,5 +1,4 @@
 name: Build Android App (Debug APK)
-
 on:
   push:
     branches: [ main ]
@@ -7,44 +6,51 @@ on:
 jobs:
   build:
     runs-on: ubuntu-22.04
-
     steps:
-      # 1. Pega o código
       - uses: actions/checkout@v4
 
-      # 2. Instalar dependências do sistema
-      - name: Instalar Dependências
+      - name: Limpar espaço e instalar dependências
         run: |
+          sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/share/boost
           sudo apt update
-          sudo apt install -y python3-pip build-essential git python3-dev \
+          sudo apt install -y python3-pip build-essential git python3 python3-dev \
           ffmpeg libsdl2-dev libsdl2-image-dev libsdl2-mixer-dev libsdl2-ttf-dev \
           libportmidi-dev libswscale-dev libavformat-dev libavcodec-dev zlib1g-dev \
           libgstreamer1.0-dev openjdk-17-jdk ant autoconf automake libtool pkg-config \
-          libunwind-dev libcrypt1 expect wget unzip
+          libunwind-dev libcrypt1 expect unzip wget
 
-      # 3. Configurar Python
       - name: Configurar Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.10'
 
-      # 4. Instalar Buildozer e Cython
-      - name: Instalar Buildozer e Cython
+      - name: Instalar Buildozer e dependências Python
         run: |
           pip install --upgrade pip
           pip install cython==0.29.33 buildozer==1.5.0
 
-      # 5. Gerar APK Debug
+      - name: Configurar Android SDK e NDK 25b
+        run: |
+          ANDROID_SDK_ROOT=/usr/local/lib/android/sdk
+          mkdir -p $ANDROID_SDK_ROOT
+          NDK_VERSION=25b
+          echo "Baixando NDK $NDK_VERSION"
+          wget -q https://dl.google.com/android/repository/android-ndk-r$NDK_VERSION-linux.zip -O ndk.zip
+          unzip -q ndk.zip -d $ANDROID_SDK_ROOT/ndk
+          export ANDROID_NDK_HOME=$ANDROID_SDK_ROOT/ndk/android-ndk-r$NDK_VERSION
+          export PATH=$ANDROID_NDK_HOME:$PATH
+          mkdir -p ~/.android && touch ~/.android/repositories.cfg
+
       - name: Gerar APK Debug
         run: |
           export ACLOCAL_PATH=/usr/share/aclocal
-          mkdir -p ~/.android && touch ~/.android/repositories.cfg
-          (while true; do echo y; sleep 10; done) | buildozer android debug
-        shell: bash
+          export ANDROIDNDK=$ANDROID_NDK_HOME
+          buildozer android debug
+        env:
+          ANDROIDNDK: ${{ env.ANDROID_NDK_HOME }}
 
-      # 6. Upload do APK Debug
-      - name: Upload do APK Debug
+      - name: Upload do APK
         uses: actions/upload-artifact@v4
         with:
-          name: NeuralFaceHD_Debug_APK
+          name: NeuralFaceHD_DebugAPK
           path: bin/*.apk
