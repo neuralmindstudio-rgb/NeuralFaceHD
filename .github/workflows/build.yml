@@ -12,7 +12,7 @@ jobs:
 
     env:
       ANDROID_HOME: /usr/local/lib/android/sdk
-      ANDROID_NDK_HOME: /usr/local/lib/android/sdk/ndk/25b
+      ANDROID_NDK_HOME: /usr/local/lib/android/sdk/ndk/25.2.9519653
       ANDROID_API: 33
       ANDROIDMINAPI: 21
 
@@ -44,7 +44,8 @@ jobs:
           rm cmdline-tools.zip
           mv cmdline-tools latest
           yes | /usr/local/lib/android/sdk/cmdline-tools/latest/bin/sdkmanager --sdk_root=/usr/local/lib/android/sdk --licenses
-          /usr/local/lib/android/sdk/cmdline-tools/latest/bin/sdkmanager --sdk_root=/usr/local/lib/android/sdk "platform-tools" "platforms;android-33" "ndk;25.2.9519653"
+          /usr/local/lib/android/sdk/cmdline-tools/latest/bin/sdkmanager --sdk_root=/usr/local/lib/android/sdk \
+            "platform-tools" "platforms;android-33" "ndk;25.2.9519653"
 
       - name: Build APK with Buildozer
         run: |
