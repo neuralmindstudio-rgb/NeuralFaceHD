@@ -1,4 +1,5 @@
 name: Build Android App (Debug APK)
+
 on:
   push:
     branches: [ main ]
@@ -6,10 +7,11 @@ on:
 jobs:
   build:
     runs-on: ubuntu-22.04
+
     steps:
       - uses: actions/checkout@v4
 
-      - name: Limpar espaço e instalar dependências
+      - name: Limpar Espaço e Instalar Dependências
         run: |
           sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/share/boost
           sudo apt update
@@ -24,7 +26,7 @@ jobs:
         with:
           python-version: '3.10'
 
-      - name: Instalar Buildozer e dependências Python
+      - name: Instalar Buildozer e Dependências Python
         run: |
           pip install --upgrade pip
           pip install cython==0.29.33 buildozer==1.5.0
@@ -33,18 +35,24 @@ jobs:
         run: |
           ANDROID_SDK_ROOT=/usr/local/lib/android/sdk
           mkdir -p $ANDROID_SDK_ROOT
-          NDK_VERSION=25b
-          echo "Baixando NDK $NDK_VERSION"
-          wget -q https://dl.google.com/android/repository/android-ndk-r$NDK_VERSION-linux.zip -O ndk.zip
-          unzip -q ndk.zip -d $ANDROID_SDK_ROOT/ndk
-          export ANDROID_NDK_HOME=$ANDROID_SDK_ROOT/ndk/android-ndk-r$NDK_VERSION
+          
+          # Baixa e instala o NDK 25b
+          wget -q https://dl.google.com/android/repository/android-ndk-r25b-linux.zip -O ndk25b.zip
+          unzip -q ndk25b.zip -d $ANDROID_SDK_ROOT/ndk
+          
+          export ANDROID_NDK_HOME=$ANDROID_SDK_ROOT/ndk/android-ndk-r25b
+          export ANDROIDNDK=$ANDROID_NDK_HOME
           export PATH=$ANDROID_NDK_HOME:$PATH
+          
+          # Prepara configurações do Android
           mkdir -p ~/.android && touch ~/.android/repositories.cfg
 
       - name: Gerar APK Debug
         run: |
           export ACLOCAL_PATH=/usr/share/aclocal
           export ANDROIDNDK=$ANDROID_NDK_HOME
+          
+          # Build do APK debug
           buildozer android debug
         env:
           ANDROIDNDK: ${{ env.ANDROID_NDK_HOME }}
@@ -52,5 +60,5 @@ jobs:
       - name: Upload do APK
         uses: actions/upload-artifact@v4
         with:
-          name: NeuralFaceHD_DebugAPK
+          name: NeuralFaceHD_Debug_APK
           path: bin/*.apk
