@@ -21,11 +21,17 @@ jobs:
           sudo apt install -y git zip unzip autoconf libtool pkg-config zlib1g-dev libncurses5-dev libncursesw5-dev libtinfo5 cmake libffi-dev libssl-dev
           pip3 install --user --upgrade Cython==0.29.33 buildozer
 
+      - name: Prepare Android SDK Licenses
+        run: |
+          # Cria a pasta de licenças para evitar que o Buildozer pare o processo
+          mkdir -p ~/.android && touch ~/.android/repositories.cfg
+          export PATH=$PATH:$HOME/.local/bin
+
       - name: Build with Buildozer
         run: |
           export PATH=$PATH:$HOME/.local/bin
-          # O comando 'yes |' aceita automaticamente todas as licenças do SDK/NDK
-          yes | buildozer android debug
+          # Rodamos o build direto. O 'accept_sdk_license = True' no seu spec fará o restante.
+          buildozer android debug
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
