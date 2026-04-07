@@ -1,60 +1,21 @@
-name: Build Android App (Debug APK)
-
+name: Build NeuralFaceHD
 on:
   push:
-    branches:
-      - main
-  workflow_dispatch:
-
+    branches: [ main, master ]
 jobs:
   build:
     runs-on: ubuntu-22.04
-
-    env:
-      ANDROID_HOME: /usr/local/lib/android/sdk
-      ANDROID_NDK_HOME: /usr/local/lib/android/sdk/ndk/25.2.9519653
-      ANDROID_API: 33
-      ANDROIDMINAPI: 21
-
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
+      - uses: actions/checkout@v3
 
-      - name: Set up Python
-        uses: actions/setup-python@v4
+      - name: Build with Buildozer
+        uses: ArtemSerebrennkov/buildozer-action@v1
         with:
-          python-version: 3.10   # <- Corrigido, não use 3.1
-
-      - name: Upgrade pip
-        run: python -m pip install --upgrade pip
-
-      - name: Install dependencies
-        run: |
-          sudo apt update
-          sudo apt install -y python3-pip python3-setuptools build-essential git unzip openjdk-11-jdk wget curl
-          pip install --upgrade cython
-          pip install --upgrade buildozer
-
-      - name: Install Android SDK & NDK
-        run: |
-          mkdir -p /usr/local/lib/android/sdk/cmdline-tools
-          cd /usr/local/lib/android/sdk/cmdline-tools
-          wget https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip -O cmdline-tools.zip
-          unzip cmdline-tools.zip
-          rm cmdline-tools.zip
-          mv cmdline-tools latest
-          yes | /usr/local/lib/android/sdk/cmdline-tools/latest/bin/sdkmanager --sdk_root=/usr/local/lib/android/sdk --licenses
-          /usr/local/lib/android/sdk/cmdline-tools/latest/bin/sdkmanager --sdk_root=/usr/local/lib/android/sdk \
-            "platform-tools" "platforms;android-33" "ndk;25.2.9519653"
-
-      - name: Build APK with Buildozer
-        run: |
-          export PATH=/usr/local/lib/android/sdk/cmdline-tools/latest/bin:/usr/local/lib/android/sdk/platform-tools:$PATH
-          cd $GITHUB_WORKSPACE
-          buildozer android debug
+          buildozer_version: master
+          python_version: "3.10" # Usando aspas para garantir que o GitHub entenda como texto
 
       - name: Upload APK
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v3
         with:
-          name: debug-apk
+          name: NeuralFaceHD-Final
           path: bin/*.apk
