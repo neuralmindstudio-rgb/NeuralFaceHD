@@ -4,70 +4,48 @@ on:
   push:
     branches:
       - main
+  workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-22.04
 
     env:
-      ANDROID_API: 33
-      ANDROID_MIN_API: 21
-      PIP_DISABLE_PIP_VERSION_CHECK: 1
+      ANDROIDSDK: /usr/local/lib/android/sdk
+      ANDROIDNDK: /usr/local/lib/android/sdk/ndk/25b
+      ANDROIDAPI: 33
+      ANDROIDMINAPI: 21
+      JAVA_HOME: /usr/lib/jvm/temurin-11-jdk-amd64
+      PATH: ${{ env.PATH }}:/usr/local/lib/android/sdk/tools:/usr/local/lib/android/sdk/platform-tools
 
     steps:
-      - name: Checkout Repository
+      - name: Checkout repo
         uses: actions/checkout@v3
 
-      - name: Setup Python
+      - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: 3.10
 
       - name: Install dependencies
         run: |
-          sudo apt update && sudo apt install -y unzip zip openjdk-11-jdk git python3-pip
-          pip install --upgrade pip
-          pip install buildozer==1.4.2 Cython==0.29.36
+          sudo apt update
+          sudo apt install -y git wget unzip openjdk-11-jdk python3-pip python3-venv build-essential zlib1g-dev libncurses5-dev libgdbm-dev libnss3-dev libssl-dev libreadline-dev libffi-dev libsqlite3-dev
+          pip install --upgrade pip buildozer cython==0.29.36
 
-      - name: Setup Android SDK
+      - name: Set up Android NDK and SDK
         run: |
-          mkdir -p $HOME/Android/Sdk
-          export ANDROID_HOME=$HOME/Android/Sdk
-          export PATH=$ANDROID_HOME/cmdline-tools/latest/bin:$PATH
-
-          # Baixa Command line tools
-          curl -o cmdline-tools.zip https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip
-          unzip cmdline-tools.zip -d $ANDROID_HOME
-          rm cmdline-tools.zip
-          mv $ANDROID_HOME/cmdline-tools $ANDROID_HOME/cmdline-tools-latest
-          echo "export ANDROID_HOME=$ANDROID_HOME" >> $GITHUB_ENV
-          echo "export PATH=$ANDROID_HOME/cmdline-tools/latest/bin:$PATH" >> $GITHUB_ENV
-
-          # Aceita licenças
-          yes | sdkmanager --licenses
-
-      - name: Install Android NDK 25b
-        run: |
-          # Limpa qualquer NDK antigo
-          rm -rf ~/.buildozer/android/platform/android-ndk-*
-          mkdir -p $HOME/Android/Sdk
-          curl -o ndk.zip https://dl.google.com/android/repository/android-ndk-r25b-linux.zip
-          unzip ndk.zip -d $HOME/Android/Sdk
+          wget https://dl.google.com/android/repository/android-ndk-r25b-linux.zip -O ndk.zip
+          unzip -q ndk.zip -d $ANDROIDSDK/ndk/
           rm ndk.zip
-          export ANDROID_NDK_HOME=$HOME/Android/Sdk/android-ndk-r25b
-          export ANDROIDNDK=$ANDROID_NDK_HOME
-          echo "export ANDROID_NDK_HOME=$ANDROID_NDK_HOME" >> $GITHUB_ENV
-          echo "export ANDROIDNDK=$ANDROID_NDK_HOME" >> $GITHUB_ENV
+          echo "NDK installed to $ANDROIDNDK"
 
       - name: Build APK
         run: |
-          # Limpa build antigo
-          buildozer android clean
-          # Build do debug APK
-          buildozer -v android debug
+          buildozer android debug
 
       - name: Upload APK
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: app-debug.apk
           path: bin/*.apk
