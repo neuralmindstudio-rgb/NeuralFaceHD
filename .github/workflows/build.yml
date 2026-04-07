@@ -3,7 +3,7 @@ on: [push, pull_request]
 
 jobs:
   build:
-    runs-on: ubuntu-22.04 # Versão mais estável para Android SDK
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
 
@@ -13,20 +13,24 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Install Android SDK & AIDL
+      - name: Install System Dependencies
         run: |
           sudo apt update
-          # Instala as ferramentas que contêm o AIDL diretamente no sistema
-          sudo apt install -y adb hercules-aidl aidl build-essential git zip unzip autoconf libtool pkg-config zlib1g-dev libncurses5-dev libncursesw5-dev libtinfo5 cmake libffi-dev libssl-dev libbz2-dev libsqlite3-dev
+          sudo apt install -y git zip unzip autoconf libtool pkg-config zlib1g-dev libncurses5-dev libncursesw5-dev libtinfo5 cmake libffi-dev libssl-dev libbz2-dev libsqlite3-dev
           pip3 install --user --upgrade Cython==0.29.33 buildozer
 
       - name: Build with Buildozer
         run: |
           export PATH=$PATH:$HOME/.local/bin
-          # Aceita as licenças antes de começar
-          yes | buildozer android debug || true
-          buildozer android debug
+          # O comando 'yes' garante que ele aceite qualquer pergunta sobre o NDK 25b
+          # Usamos o '|| true' no primeiro comando para garantir que ele não pare se o SDK já existir
+          buildozer android clean
+          yes | buildozer android debug
         env:
           APP_ANDROID_ACCEPT_SDK_LICENSE: "1"
-          # Força o Buildozer a usar o AIDL do sistema se o dele falhar
-          PATH: /usr/bin:/usr/local/bin:/home/runner/.local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: NeuralFaceHD-Final
+          path: bin/*.apk
