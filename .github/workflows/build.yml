@@ -2,64 +2,72 @@ name: Build Android App (Debug APK)
 
 on:
   push:
-    branches: [ main ]
+    branches:
+      - main
 
 jobs:
   build:
     runs-on: ubuntu-22.04
 
+    env:
+      ANDROID_API: 33
+      ANDROID_MIN_API: 21
+      PIP_DISABLE_PIP_VERSION_CHECK: 1
+
     steps:
-      - name: Checkout do Código
-        uses: actions/checkout@v4
+      - name: Checkout Repository
+        uses: actions/checkout@v3
 
-      - name: Limpar Espaço e Instalar Dependencias
-        run: |
-          sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/share/boost
-          sudo apt-get update -qq
-          sudo apt-get install -y --no-install-recommends \
-            python3-pip build-essential git python3 python3-dev \
-            ffmpeg libsdl2-dev libsdl2-image-dev libsdl2-mixer-dev libsdl2-ttf-dev \
-            libportmidi-dev libswscale-dev libavformat-dev libavcodec-dev zlib1g-dev \
-            libgstreamer1.0-dev openjdk-17-jdk ant autoconf automake libtool pkg-config \
-            libunwind-dev libcrypt1 expect curl unzip
-          sudo apt-get clean
-          sudo rm -rf /var/lib/apt/lists/*
-
-      - name: Configurar Python
-        uses: actions/setup-python@v5
+      - name: Setup Python
+        uses: actions/setup-python@v4
         with:
-          python-version: '3.10'
+          python-version: 3.10
 
-      - name: Instalar Buildozer e Cython
+      - name: Install dependencies
         run: |
+          sudo apt update && sudo apt install -y unzip zip openjdk-11-jdk git python3-pip
           pip install --upgrade pip
-          pip install cython==0.29.33 buildozer==1.5.0
+          pip install buildozer==1.4.2 Cython==0.29.36
 
-      - name: Configurar Android SDK/NDK
+      - name: Setup Android SDK
         run: |
-          export ANDROID_SDK_ROOT=/usr/local/lib/android/sdk
-          mkdir -p $ANDROID_SDK_ROOT
-          # Instala NDK 25b específico
+          mkdir -p $HOME/Android/Sdk
+          export ANDROID_HOME=$HOME/Android/Sdk
+          export PATH=$ANDROID_HOME/cmdline-tools/latest/bin:$PATH
+
+          # Baixa Command line tools
+          curl -o cmdline-tools.zip https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip
+          unzip cmdline-tools.zip -d $ANDROID_HOME
+          rm cmdline-tools.zip
+          mv $ANDROID_HOME/cmdline-tools $ANDROID_HOME/cmdline-tools-latest
+          echo "export ANDROID_HOME=$ANDROID_HOME" >> $GITHUB_ENV
+          echo "export PATH=$ANDROID_HOME/cmdline-tools/latest/bin:$PATH" >> $GITHUB_ENV
+
+          # Aceita licenças
+          yes | sdkmanager --licenses
+
+      - name: Install Android NDK 25b
+        run: |
+          # Limpa qualquer NDK antigo
+          rm -rf ~/.buildozer/android/platform/android-ndk-*
+          mkdir -p $HOME/Android/Sdk
           curl -o ndk.zip https://dl.google.com/android/repository/android-ndk-r25b-linux.zip
-          unzip ndk.zip -d $ANDROID_SDK_ROOT
+          unzip ndk.zip -d $HOME/Android/Sdk
           rm ndk.zip
-          export ANDROID_NDK_HOME=$ANDROID_SDK_ROOT/android-ndk-r25b
-          export PATH=$ANDROID_SDK_ROOT/cmdline-tools/latest/bin:$ANDROID_NDK_HOME:$PATH
-          yes | $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager --licenses
+          export ANDROID_NDK_HOME=$HOME/Android/Sdk/android-ndk-r25b
+          export ANDROIDNDK=$ANDROID_NDK_HOME
+          echo "export ANDROID_NDK_HOME=$ANDROID_NDK_HOME" >> $GITHUB_ENV
+          echo "export ANDROIDNDK=$ANDROID_NDK_HOME" >> $GITHUB_ENV
 
-      - name: Gerar APK Debug
+      - name: Build APK
         run: |
-          export ACLOCAL_PATH=/usr/share/aclocal
-          mkdir -p ~/.android && touch ~/.android/repositories.cfg
-          buildozer android debug
-        env:
-          APP_ANDROID_KEYSTORE: release.keystore
-          APP_ANDROID_KEYSTORE_PASS: ${{ secrets.KEYSTORE_PASSWORD }}
-          APP_ANDROID_KEYALIAS: ${{ secrets.KEY_ALIAS }}
-          APP_ANDROID_KEYALIAS_PASS: ${{ secrets.KEY_ALIAS_PASSWORD }}
+          # Limpa build antigo
+          buildozer android clean
+          # Build do debug APK
+          buildozer -v android debug
 
-      - name: Upload do APK
-        uses: actions/upload-artifact@v4
+      - name: Upload APK
+        uses: actions/upload-artifact@v3
         with:
-          name: NeuralFaceHD_APK_Debug
+          name: app-debug.apk
           path: bin/*.apk
