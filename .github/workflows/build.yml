@@ -9,16 +9,15 @@ on:
 jobs:
   build:
     runs-on: ubuntu-22.04
-
     env:
-      ANDROIDSDK: /usr/local/lib/android/sdk
-      ANDROIDNDK: /usr/local/lib/android/sdk/ndk/25b
-      ANDROIDAPI: 33
+      ANDROID_HOME: /usr/local/lib/android/sdk
+      ANDROID_NDK_HOME: /usr/local/lib/android/sdk/ndk/25b
+      ANDROID_API: 33
       ANDROIDMINAPI: 21
-      JAVA_HOME: /usr/lib/jvm/temurin-11-jdk-amd64
+      PATH: ${{ env.ANDROID_HOME }}/cmdline-tools/latest/bin:${{ env.ANDROID_HOME }}/platform-tools:$PATH
 
     steps:
-      - name: Checkout repo
+      - name: Checkout repository
         uses: actions/checkout@v3
 
       - name: Set up Python
@@ -26,27 +25,34 @@ jobs:
         with:
           python-version: 3.10
 
+      - name: Upgrade pip
+        run: python -m pip install --upgrade pip
+
       - name: Install dependencies
         run: |
           sudo apt update
-          sudo apt install -y git wget unzip openjdk-11-jdk python3-pip python3-venv build-essential zlib1g-dev libncurses5-dev libgdbm-dev libnss3-dev libssl-dev libreadline-dev libffi-dev libsqlite3-dev
-          pip install --upgrade pip buildozer cython==0.29.36
+          sudo apt install -y python3-pip python3-setuptools build-essential git unzip openjdk-11-jdk wget curl
+          pip install --upgrade cython
+          pip install --upgrade buildozer
 
-      - name: Set PATH for Android tools
+      - name: Install Android SDK & NDK
         run: |
-          echo "PATH=$PATH:$ANDROIDSDK/tools:$ANDROIDSDK/platform-tools" >> $GITHUB_ENV
+          mkdir -p $ANDROID_HOME/cmdline-tools
+          cd $ANDROID_HOME/cmdline-tools
+          wget https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip -O cmdline-tools.zip
+          unzip cmdline-tools.zip
+          rm cmdline-tools.zip
+          mv cmdline-tools latest
+          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --sdk_root=$ANDROID_HOME --licenses
+          $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --sdk_root=$ANDROID_HOME "platform-tools" "platforms;android-${{ env.ANDROID_API }}" "ndk;25.2.9519653"
 
-      - name: Set up Android NDK
+      - name: Build APK with Buildozer
         run: |
-          wget https://dl.google.com/android/repository/android-ndk-r25b-linux.zip -O ndk.zip
-          unzip -q ndk.zip -d $ANDROIDSDK/ndk/
-          rm ndk.zip
-
-      - name: Build APK
-        run: buildozer android debug
+          cd $GITHUB_WORKSPACE
+          buildozer android debug
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: app-debug.apk
+          name: debug-apk
           path: bin/*.apk
