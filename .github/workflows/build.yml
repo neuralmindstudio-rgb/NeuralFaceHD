@@ -22,15 +22,11 @@ jobs:
       - name: Build with Buildozer
         run: |
           export PATH=$PATH:$HOME/.local/bin
-          # O comando 'yes' garante que ele aceite qualquer pergunta sobre o NDK 25b
-          # Usamos o '|| true' no primeiro comando para garantir que ele não pare se o SDK já existir
-          buildozer android clean
+          # Forçamos a exclusão de qualquer resquício de erro anterior
+          rm -rf .buildozer
+          # O comando 'yes' aceita as licenças e o NDK
           yes | buildozer android debug
         env:
           APP_ANDROID_ACCEPT_SDK_LICENSE: "1"
-
-      - name: Upload APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: NeuralFaceHD-Final
-          path: bin/*.apk
+          # Isso força o Buildozer a usar o branch master do p4a, resolvendo o FileNotFoundError
+          P4A_BRANCH: master
