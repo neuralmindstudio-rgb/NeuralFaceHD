@@ -8,7 +8,7 @@ version = 1.0.0
 version.code = 1
 
 # REQUISITOS: Adicionei ffpyplayer e pyjnius que seu main.py exige
-requirements = python3,kivy==2.3.0,kivymd==1.2.0,pillow,requests,urllib3,charset-normalizer,idna,certifi,plyer,ffpyplayer,pyjnius
+requirements = python3,kivy==2.2.1,kivymd==1.1.1,requests,urllib3,charset-normalizer,idna,certifi,plyer,ffpyplayer,pyjnius,openssl,pyopenssl
 
 orientation = portrait
 android.permissions = INTERNET, WRITE_EXTERNAL_STORAGE, READ_EXTERNAL_STORAGE, CAMERA
