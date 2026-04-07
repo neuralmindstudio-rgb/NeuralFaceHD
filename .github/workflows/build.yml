@@ -22,15 +22,13 @@ jobs:
       - name: Build with Buildozer
         run: |
           export PATH=$PATH:$HOME/.local/bin
-          # Limpamos resíduos para garantir que o AIDL seja baixado do zero
-          buildozer android clean
-          # O comando abaixo aceita licenças sem precisar do 'yes'
+          # NÃO usamos o clean aqui para evitar o FileNotFoundError
+          # Rodamos o build direto, aceitando as licenças via variável de ambiente
           buildozer android debug
         env:
-          # Esta é a chave para não precisar digitar "y" no meio do build
           APP_ANDROID_ACCEPT_SDK_LICENSE: "1"
-          # Garante que o Buildozer use o Java 17 para rodar o AIDL
-          JAVA_HOME: /usr/lib/jvm/temurin-17-jdk-amd64
+          # Isso garante que o motor p4a seja baixado na versão certa
+          P4A_RELEASE: "master"
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
