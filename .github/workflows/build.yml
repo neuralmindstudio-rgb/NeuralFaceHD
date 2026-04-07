@@ -9,56 +9,57 @@ jobs:
     runs-on: ubuntu-22.04
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout do Código
+        uses: actions/checkout@v4
 
-      - name: Limpar Espaço e Instalar Dependências
+      - name: Limpar Espaço e Instalar Dependencias
         run: |
           sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/share/boost
-          sudo apt update
-          sudo apt install -y python3-pip build-essential git python3 python3-dev \
-          ffmpeg libsdl2-dev libsdl2-image-dev libsdl2-mixer-dev libsdl2-ttf-dev \
-          libportmidi-dev libswscale-dev libavformat-dev libavcodec-dev zlib1g-dev \
-          libgstreamer1.0-dev openjdk-17-jdk ant autoconf automake libtool pkg-config \
-          libunwind-dev libcrypt1 expect unzip wget
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends \
+            python3-pip build-essential git python3 python3-dev \
+            ffmpeg libsdl2-dev libsdl2-image-dev libsdl2-mixer-dev libsdl2-ttf-dev \
+            libportmidi-dev libswscale-dev libavformat-dev libavcodec-dev zlib1g-dev \
+            libgstreamer1.0-dev openjdk-17-jdk ant autoconf automake libtool pkg-config \
+            libunwind-dev libcrypt1 expect curl unzip
+          sudo apt-get clean
+          sudo rm -rf /var/lib/apt/lists/*
 
       - name: Configurar Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.10'
 
-      - name: Instalar Buildozer e Dependências Python
+      - name: Instalar Buildozer e Cython
         run: |
           pip install --upgrade pip
           pip install cython==0.29.33 buildozer==1.5.0
 
-      - name: Configurar Android SDK e NDK 25b
+      - name: Configurar Android SDK/NDK
         run: |
-          ANDROID_SDK_ROOT=/usr/local/lib/android/sdk
+          export ANDROID_SDK_ROOT=/usr/local/lib/android/sdk
           mkdir -p $ANDROID_SDK_ROOT
-          
-          # Baixa e instala o NDK 25b
-          wget -q https://dl.google.com/android/repository/android-ndk-r25b-linux.zip -O ndk25b.zip
-          unzip -q ndk25b.zip -d $ANDROID_SDK_ROOT/ndk
-          
-          export ANDROID_NDK_HOME=$ANDROID_SDK_ROOT/ndk/android-ndk-r25b
-          export ANDROIDNDK=$ANDROID_NDK_HOME
-          export PATH=$ANDROID_NDK_HOME:$PATH
-          
-          # Prepara configurações do Android
-          mkdir -p ~/.android && touch ~/.android/repositories.cfg
+          # Instala NDK 25b específico
+          curl -o ndk.zip https://dl.google.com/android/repository/android-ndk-r25b-linux.zip
+          unzip ndk.zip -d $ANDROID_SDK_ROOT
+          rm ndk.zip
+          export ANDROID_NDK_HOME=$ANDROID_SDK_ROOT/android-ndk-r25b
+          export PATH=$ANDROID_SDK_ROOT/cmdline-tools/latest/bin:$ANDROID_NDK_HOME:$PATH
+          yes | $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager --licenses
 
       - name: Gerar APK Debug
         run: |
           export ACLOCAL_PATH=/usr/share/aclocal
-          export ANDROIDNDK=$ANDROID_NDK_HOME
-          
-          # Build do APK debug
+          mkdir -p ~/.android && touch ~/.android/repositories.cfg
           buildozer android debug
         env:
-          ANDROIDNDK: ${{ env.ANDROID_NDK_HOME }}
+          APP_ANDROID_KEYSTORE: release.keystore
+          APP_ANDROID_KEYSTORE_PASS: ${{ secrets.KEYSTORE_PASSWORD }}
+          APP_ANDROID_KEYALIAS: ${{ secrets.KEY_ALIAS }}
+          APP_ANDROID_KEYALIAS_PASS: ${{ secrets.KEY_ALIAS_PASSWORD }}
 
       - name: Upload do APK
         uses: actions/upload-artifact@v4
         with:
-          name: NeuralFaceHD_Debug_APK
+          name: NeuralFaceHD_APK_Debug
           path: bin/*.apk
