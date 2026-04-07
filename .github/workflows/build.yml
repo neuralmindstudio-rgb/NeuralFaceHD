@@ -22,13 +22,14 @@ jobs:
       - name: Build with Buildozer
         run: |
           export PATH=$PATH:$HOME/.local/bin
-          # Aceita as licenças de forma silenciosa e limpa erros antigos
+          # Limpamos resíduos para garantir que o AIDL seja baixado do zero
           buildozer android clean
+          # O comando abaixo aceita licenças sem precisar do 'yes'
           buildozer android debug
         env:
-          # Esta variável substitui a necessidade do comando 'yes'
+          # Esta é a chave para não precisar digitar "y" no meio do build
           APP_ANDROID_ACCEPT_SDK_LICENSE: "1"
-          # Força o Buildozer a usar o Java que instalamos
+          # Garante que o Buildozer use o Java 17 para rodar o AIDL
           JAVA_HOME: /usr/lib/jvm/temurin-17-jdk-amd64
 
       - name: Upload APK
