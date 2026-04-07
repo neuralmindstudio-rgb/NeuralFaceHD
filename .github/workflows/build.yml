@@ -4,15 +4,19 @@ on: [push, pull_request]
 jobs:
   build:
     runs-on: ubuntu-latest
+    # Usamos o contêiner oficial que JÁ TEM o AIDL e o Android SDK instalados
+    container:
+      image: kivy/buildozer:latest
+
     steps:
       - uses: actions/checkout@v4
 
-      # Esta action já contém o AIDL, SDK e NDK configurados internamente
       - name: Build with Buildozer
-        uses: ArtemSerebrennkov/buildozer-action@v1
-        with:
-          buildozer_version: stable
-          python_version: 3.10
+        run: |
+          # O AIDL já está aqui dentro, o Buildozer só precisa rodar
+          buildozer android debug
+        env:
+          APP_ANDROID_ACCEPT_SDK_LICENSE: "1"
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
