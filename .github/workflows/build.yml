@@ -1,4 +1,5 @@
-name: Build Android App (FINAL-SUCCESS)
+name: Build Android App (Debug APK)
+
 on:
   push:
     branches: [ main ]
@@ -6,46 +7,44 @@ on:
 jobs:
   build:
     runs-on: ubuntu-22.04
+
     steps:
+      # 1. Pega o código
       - uses: actions/checkout@v4
 
-      - name: Limpar Espaço e Instalar Dependencias
+      # 2. Instalar dependências do sistema
+      - name: Instalar Dependências
         run: |
-          # Garante que o servidor tenha espaço para o Android SDK
-          sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/share/boost
           sudo apt update
-          sudo apt install -y python3-pip build-essential git python3 python3-dev \
+          sudo apt install -y python3-pip build-essential git python3-dev \
           ffmpeg libsdl2-dev libsdl2-image-dev libsdl2-mixer-dev libsdl2-ttf-dev \
           libportmidi-dev libswscale-dev libavformat-dev libavcodec-dev zlib1g-dev \
           libgstreamer1.0-dev openjdk-17-jdk ant autoconf automake libtool pkg-config \
-          libunwind-dev libcrypt1 expect
+          libunwind-dev libcrypt1 expect wget unzip
 
+      # 3. Configurar Python
       - name: Configurar Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.10'
 
-      - name: Ferramentas de Build
+      # 4. Instalar Buildozer e Cython
+      - name: Instalar Buildozer e Cython
         run: |
           pip install --upgrade pip
           pip install cython==0.29.33 buildozer==1.5.0
 
-      - name: Gerar App Bundle (AAB)
+      # 5. Gerar APK Debug
+      - name: Gerar APK Debug
         run: |
           export ACLOCAL_PATH=/usr/share/aclocal
-          # Prepara o ambiente para as licenças Android
           mkdir -p ~/.android && touch ~/.android/repositories.cfg
-          
-          # Uso do 'yes' com um pequeno delay para não derrubar a conexão (Broken Pipe)
-          (while true; do echo y; sleep 10; done) | buildozer android release
-        env:
-          APP_ANDROID_KEYSTORE: release.keystore
-          APP_ANDROID_KEYSTORE_PASS: ${{ secrets.KEYSTORE_PASSWORD }}
-          APP_ANDROID_KEYALIAS: ${{ secrets.KEY_ALIAS }}
-          APP_ANDROID_KEYALIAS_PASS: ${{ secrets.KEY_ALIAS_PASSWORD }}
+          (while true; do echo y; sleep 10; done) | buildozer android debug
+        shell: bash
 
-      - name: Upload do App
+      # 6. Upload do APK Debug
+      - name: Upload do APK Debug
         uses: actions/upload-artifact@v4
         with:
-          name: NeuralFaceHD_AAB_Final
-          path: bin/*.aab
+          name: NeuralFaceHD_Debug_APK
+          path: bin/*.apk
