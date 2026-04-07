@@ -16,7 +16,6 @@ jobs:
       ANDROIDAPI: 33
       ANDROIDMINAPI: 21
       JAVA_HOME: /usr/lib/jvm/temurin-11-jdk-amd64
-      PATH: ${{ env.PATH }}:/usr/local/lib/android/sdk/tools:/usr/local/lib/android/sdk/platform-tools
 
     steps:
       - name: Checkout repo
@@ -33,16 +32,18 @@ jobs:
           sudo apt install -y git wget unzip openjdk-11-jdk python3-pip python3-venv build-essential zlib1g-dev libncurses5-dev libgdbm-dev libnss3-dev libssl-dev libreadline-dev libffi-dev libsqlite3-dev
           pip install --upgrade pip buildozer cython==0.29.36
 
-      - name: Set up Android NDK and SDK
+      - name: Set PATH for Android tools
+        run: |
+          echo "PATH=$PATH:$ANDROIDSDK/tools:$ANDROIDSDK/platform-tools" >> $GITHUB_ENV
+
+      - name: Set up Android NDK
         run: |
           wget https://dl.google.com/android/repository/android-ndk-r25b-linux.zip -O ndk.zip
           unzip -q ndk.zip -d $ANDROIDSDK/ndk/
           rm ndk.zip
-          echo "NDK installed to $ANDROIDNDK"
 
       - name: Build APK
-        run: |
-          buildozer android debug
+        run: buildozer android debug
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
