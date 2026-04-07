@@ -3,26 +3,30 @@ on: [push, pull_request]
 
 jobs:
   build:
-    runs-on: ubuntu-latest
-    # Usando o container oficial que já tem as ferramentas básicas
-    container:
-      image: kivy/buildozer:latest
-
+    runs-on: ubuntu-22.04 # Versão mais estável para Android SDK
     steps:
       - uses: actions/checkout@v4
 
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Install Android SDK & AIDL
+        run: |
+          sudo apt update
+          # Instala as ferramentas que contêm o AIDL diretamente no sistema
+          sudo apt install -y adb hercules-aidl aidl build-essential git zip unzip autoconf libtool pkg-config zlib1g-dev libncurses5-dev libncursesw5-dev libtinfo5 cmake libffi-dev libssl-dev libbz2-dev libsqlite3-dev
+          pip3 install --user --upgrade Cython==0.29.33 buildozer
+
       - name: Build with Buildozer
         run: |
-          # O comando 'yes' responde "y" para todas as perguntas de licença e NDK
-          yes | buildozer android debug
+          export PATH=$PATH:$HOME/.local/bin
+          # Aceita as licenças antes de começar
+          yes | buildozer android debug || true
+          buildozer android debug
         env:
-          # Reforço para o Android aceitar as licenças silenciosamente
           APP_ANDROID_ACCEPT_SDK_LICENSE: "1"
-          # Evita que o Python peça entrada de dados
-          PYTHONUNBUFFERED: "1"
-
-      - name: Upload APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: NeuralFaceHD-Final
-          path: bin/*.apk
+          # Força o Buildozer a usar o AIDL do sistema se o dele falhar
+          PATH: /usr/bin:/usr/local/bin:/home/runner/.local/bin:/usr/sbin:/usr/bin:/sbin:/bin
