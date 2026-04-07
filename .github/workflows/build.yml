@@ -10,24 +10,28 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Set up JDK 17
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Install Dependencies
+      - name: Install System Dependencies
         run: |
           sudo apt update
           sudo apt install -y git zip unzip autoconf libtool pkg-config zlib1g-dev libncurses5-dev libncursesw5-dev libtinfo5 cmake libffi-dev libssl-dev libbz2-dev libsqlite3-dev
           pip3 install --user --upgrade Cython==0.29.33 buildozer
 
-      - name: Install Android Build Tools
-        run: |
-          # Aceita licenças e instala as build-tools 33.0.0 manualmente
-          yes | sdkmanager --sdk_root=$ANDROID_HOME "build-tools;33.0.0" "platforms;android-33" "platform-tools"
-
       - name: Build with Buildozer
         run: |
           export PATH=$PATH:$HOME/.local/bin
-          # Forçamos o buildozer a enxergar o SDK do sistema
+          # Usamos o buildozer direto; ele mesmo vai baixar o SDK/AIDL agora que o Java 17 está ok
           buildozer android debug
+        env:
+          # Isso ajuda o Buildozer a aceitar licenças automaticamente no ambiente CI
+          APP_ANDROID_ACCEPT_SDK_LICENSE: "1"
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: NeuralFaceHD-Final
+          path: bin/*.apk
