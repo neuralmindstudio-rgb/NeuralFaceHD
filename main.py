@@ -1,6 +1,5 @@
 import os
-# Configuração para evitar flashes brancos e problemas de GPU
-os.environ['KIVY_VIDEO'] = 'ffpyplayer'
+# REMOVIDO: os.environ['KIVY_VIDEO'] = 'ffpyplayer' (Não usamos mais vídeo)
 
 from kivy.core.window import Window
 # Garante o fundo preto antes de tudo carregar
@@ -11,11 +10,11 @@ from kivy.uix.screenmanager import ScreenManager
 from kivy.clock import Clock
 
 # --- IMPORTAÇÃO DOS SEUS ARQUIVOS SEPARADOS ---
-import login         # Agora busca no seu login.py centralizado
-import cadastro      # Agora busca no seu cadastro.py (o backup bom)
-import interface_ia  # Sua tela principal
-import splash        # Sua tela de abertura
-import loja          # Sua loja Neon
+import login         
+import cadastro      
+import interface_ia  
+import splash        
+import loja          
 
 class NeuralApp(MDApp):
     def build(self):
@@ -27,13 +26,13 @@ class NeuralApp(MDApp):
         
         # --- ADICIONANDO AS TELAS ---
         
-        # 1. Splash Screen
+        # 1. Splash Screen (Verifique se dentro de splash.py não há vídeo!)
         sm.add_widget(splash.TelaSplash(name='splash'))
         
-        # 2. Tela de Login (Puxando do arquivo login.py)
+        # 2. Tela de Login
         sm.add_widget(login.TelaLogin(name='login'))
         
-        # 3. Tela de Cadastro (Puxando do arquivo cadastro.py)
+        # 3. Tela de Cadastro
         sm.add_widget(cadastro.TelaCadastro(name='registro'))
         
         # 4. Interface Principal (IA)
@@ -48,8 +47,7 @@ class NeuralApp(MDApp):
 
     def on_start(self):
         """
-        Esta função roda assim que o App inicia. 
-        Ela tenta forçar o Android a manter a tela ligada (Wake Lock).
+        Força o Android a manter a tela ligada (Wake Lock).
         """
         try:
             from android.runnable import run_on_ui_thread
@@ -62,19 +60,12 @@ class NeuralApp(MDApp):
                 activity.getWindow().addFlags(WindowManager.FLAG_KEEP_SCREEN_ON)
             keep_screen_on()
         except Exception as e:
-            print(f"Aviso: WakeLock não aplicado (comum fora do Android): {e}")
+            print(f"Aviso: WakeLock não aplicado: {e}")
 
     def on_pause(self):
-        """
-        Quando o usuário minimiza o app ou a tela apaga.
-        Retornar True impede que o Android mate o processo imediatamente.
-        """
         return True
 
     def on_resume(self):
-        """
-        Quando o usuário volta para o aplicativo.
-        """
         pass
 
 if __name__ == "__main__":
