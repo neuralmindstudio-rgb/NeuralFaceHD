@@ -6,28 +6,30 @@ source.dir = .
 source.include_exts = py,png,jpg,kv,atlas,json,ttf,onnx
 source.include_patterns = assets/*,images/*
 
-# REQUISITOS OTIMIZADOS (Removido o que é pesado e desnecessário para o build passar)
+# REQUISITOS OTIMIZADOS
 requirements = python3,kivy==2.2.1,kivymd==1.1.1,requests,urllib3,chardet,idna,certifi,pyrebase4,pycryptodome,setuptools,requests-toolbelt,cryptography,hostpython3
 
 version = 1.3
 orientation = portrait
 
 android.permissions = INTERNET, READ_EXTERNAL_STORAGE, WRITE_EXTERNAL_STORAGE, CAMERA
-android.api = 33
+
+# AJUSTE PARA O GITHUB ACTIONS 2026
+# Usando API 34 e apontando para o NDK 27 que o log mostrou estar presente
+android.api = 34
 android.minapi = 21
-android.sdk = 33
-android.ndk = 25b
+android.sdk = 34
+android.ndk = 27c
+android.ndk_path = /usr/local/lib/android/sdk/ndk/27.3.13750724
 android.skip_update = False
 android.accept_sdk_license = True
 
 android.uses_cleartext_traffic = True
 
-# FOCO TOTAL NO REDMI NOTE 14 (64 bits)
-# Removendo armeabi-v7a para o build ser mais rápido e não dar erro de tempo/espaço
+# FOCO NO SEU REDMI (64 bits)
 android.archs = arm64-v8a
 
 p4a.bootstrap = sdl2
-# Mantendo 'main' sem o .py para evitar erro de classe não encontrada
 android.entrypoint = main
 android.copy_libs = 1
 
