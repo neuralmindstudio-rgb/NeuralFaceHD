@@ -11,7 +11,7 @@ source.include_exts = py,png,jpg,kv,atlas,json,ttf,onnx
 source.include_patterns = assets/*,images/*
 
 # (section) REQUISITOS (Blindado contra erros de compilação)
-requirements = python3,kivy==2.2.1,kivymd==1.1.1,requests,urllib3,chardet,idna,certifi,pyrebase4,gcloud-free,oauth2client,pycryptodome,setuptools,requests-toolbelt,cryptography==38.0.4,hostpython3
+requirements = python3,kivy==2.2.1,kivymd==1.1.1,requests,urllib3,chardet,idna,certifi,pyrebase4,gcloud-free,oauth2client,pycryptodome,setuptools,requests-toolbelt,cryptography==34.0.0,hostpython3
 
 # (section) Versão e Orientação
 # Pulamos para 1.3 para ignorar qualquer cache de erro da 1.2
