@@ -85,6 +85,9 @@ class TelaLogin(Screen):
             size_hint_y=None,
             height=dp(56)
         )
+
+        self.input_email.bind(on_touch_down=self.forcar_foco)
+        self.input_senha.bind(on_touch_down=self.forcar_foco)
         self.input_senha.bind(on_touch_down=self.checar_clique_no_olho)
 
         container.add_widget(self.input_email)
@@ -159,6 +162,10 @@ class TelaLogin(Screen):
 
     def on_pre_enter(self, *args):
         Window.softinput_mode = "resize"
+
+    def forcar_foco(self, instance, touch):
+        if instance.collide_point(*touch.pos):
+            instance.focus = True
 
     def toggle_checkbox_lembrar(self, instance, touch):
         if instance.collide_point(*touch.pos):
