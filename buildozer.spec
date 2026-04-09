@@ -19,7 +19,6 @@ android.permissions = INTERNET, CAMERA, READ_EXTERNAL_STORAGE, WRITE_EXTERNAL_ST
 # ⚙️ CONFIG ANDROID ESTÁVEL
 android.api = 33
 android.minapi = 21
-android.sdk = 33
 android.ndk = 25b
 
 android.accept_sdk_license = True
@@ -32,7 +31,7 @@ android.archs = arm64-v8a
 # 🔧 Bootstrap correto
 p4a.bootstrap = sdl2
 
-# ❌ REMOVIDO (CAUSAVA SEU ERRO)
+# ❌ NÃO usar entrypoint (quebrava o build)
 # android.entrypoint = main.py
 
 android.copy_libs = 1
