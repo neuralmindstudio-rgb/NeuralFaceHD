@@ -6,7 +6,7 @@ from kivy.uix.label import Label
 from kivy.metrics import dp
 from kivy.clock import Clock
 from kivy.graphics import Color, Rectangle
-from kivy.storage.jsonstore import JsonStore 
+from kivy.storage.jsonstore import JsonStore
 from kivy.core.window import Window
 
 from kivymd.uix.button import MDFillRoundFlatButton, MDRectangleFlatButton, MDFlatButton
@@ -14,13 +14,14 @@ from kivymd.uix.textfield import MDTextField
 from kivymd.uix.selectioncontrol import MDCheckbox
 from kivymd.uix.dialog import MDDialog
 
-# 🔥 PROTEÇÃO DO FIREBASE (CORREÇÃO PRINCIPAL)
+# 🔥 NOVO FIREBASE VIA REST
 try:
-    from banco_dados import auth
-    print("Firebase OK")
+    from banco_dados import login as realizar_login, recuperar_senha
+    print("Banco REST OK")
 except Exception as e:
-    print(f"Erro Firebase: {e}")
-    auth = None
+    print(f"Erro banco_dados: {e}")
+    realizar_login = None
+    recuperar_senha = None
 
 store = JsonStore('saved_user.json')
 
@@ -28,9 +29,10 @@ store = JsonStore('saved_user.json')
 class TelaLogin(Screen):
     def __init__(self, **kw):
         super().__init__(**kw)
-        
+
+        Window.softinput_mode = "resize"
         Window.bind(on_keyboard=self.voltar_ao_login)
-        
+
         with self.canvas.before:
             Color(0, 0, 0, 1)
             self.rect = Rectangle(pos=self.pos, size=self.size)
@@ -45,18 +47,18 @@ class TelaLogin(Screen):
             size_hint=(1, None)
         )
         layout_principal.bind(minimum_height=layout_principal.setter('height'))
-        
+
         layout_principal.add_widget(Label(
-            text="NEURAL FACE HD", 
+            text="NEURAL FACE HD",
             font_size='32sp', bold=True,
             color=(0.6, 0.2, 1, 1),
             halign="center",
             size_hint_y=None,
             height=dp(50)
         ))
-        
+
         layout_principal.add_widget(Label(
-            text="by Neural Mind Studio", 
+            text="by Neural Mind Studio",
             font_size='12sp',
             color=(0.4, 0.4, 0.4, 1),
             size_hint_y=None,
@@ -66,31 +68,32 @@ class TelaLogin(Screen):
 
         # Campos
         self.input_email = MDTextField(hint_text="E-mail", mode="rectangle")
-        
+
         self.input_senha = MDTextField(
-            hint_text="Senha", 
-            mode="rectangle", 
+            hint_text="Senha",
+            mode="rectangle",
             password=True,
             icon_right="eye-off"
         )
         self.input_senha.bind(on_touch_down=self.checar_clique_no_olho)
-        
+
         layout_principal.add_widget(self.input_email)
         layout_principal.add_widget(self.input_senha)
 
         # Opções
         layout_opcoes = BoxLayout(orientation='horizontal', size_hint_y=None, height=dp(40))
-        box_check = BoxLayout(orientation='horizontal', size_hint_x=0.5)
+        box_check = BoxLayout(orientation='horizontal', size_hint_x=0.5, spacing=dp(8))
+        box_check.bind(on_touch_down=self.toggle_checkbox_lembrar)
 
         self.check_lembrar = MDCheckbox(
             size_hint=(None, None),
-            size=(dp(38), dp(38)),
+            size=(dp(48), dp(48)),
             selected_color=(0.6, 0.2, 1, 1)
         )
 
         box_check.add_widget(self.check_lembrar)
         box_check.add_widget(Label(text="Lembrar", font_size='13sp', color=(0.7, 0.7, 0.7, 1)))
-        
+
         btn_esqueci = MDFlatButton(
             text="Esqueci a senha?",
             font_size='12sp',
@@ -108,7 +111,7 @@ class TelaLogin(Screen):
             md_bg_color=(0.4, 0, 0.8, 1),
             on_release=self.fazer_login
         ))
-        
+
         layout_principal.add_widget(MDRectangleFlatButton(
             text="CRIAR NOVA CONTA",
             size_hint_x=1,
@@ -130,9 +133,15 @@ class TelaLogin(Screen):
 
         Clock.schedule_once(self.carregar_dados_salvos)
 
+    def toggle_checkbox_lembrar(self, instance, touch):
+        if instance.collide_point(*touch.pos):
+            self.check_lembrar.active = not self.check_lembrar.active
+            return True
+        return False
+
     def checar_clique_no_olho(self, instance, touch):
         if instance.collide_point(*touch.pos):
-            if touch.x > (instance.right - dp(45)):
+            if touch.x > (instance.right - dp(75)):
                 instance.password = not instance.password
                 instance.icon_right = "eye" if not instance.password else "eye-off"
                 return True
@@ -162,7 +171,6 @@ class TelaLogin(Screen):
     def ir_para_registro(self):
         self.manager.current = 'registro'
 
-    # 🔥 LOGIN SEGURO (NÃO CRASHA MAIS)
     def fazer_login(self, instance):
         print("Tentando login...")
 
@@ -170,44 +178,49 @@ class TelaLogin(Screen):
             MDDialog(title="Aviso", text="Preencha todos os campos.").open()
             return
 
-        # 👉 SE FIREBASE NÃO CARREGOU
-        if not auth:
-            print("Firebase indisponível - entrando direto (modo teste)")
-            self.manager.current = 'principal'
+        if not realizar_login:
+            MDDialog(title="Erro", text="Sistema de login indisponível.").open()
             return
 
         try:
-            auth.sign_in_with_email_and_password(
-                self.input_email.text,
-                self.input_senha.text
+            sucesso = realizar_login(
+                self.input_email.text.strip(),
+                self.input_senha.text.strip()
             )
 
-            if self.check_lembrar.active:
-                store.put(
-                    'user_creds',
-                    email=self.input_email.text,
-                    password=self.input_senha.text
-                )
-            else:
-                if store.exists('user_creds'):
-                    store.delete('user_creds')
+            if sucesso:
+                if self.check_lembrar.active:
+                    store.put(
+                        'user_creds',
+                        email=self.input_email.text,
+                        password=self.input_senha.text
+                    )
+                else:
+                    if store.exists('user_creds'):
+                        store.delete('user_creds')
 
-            self.manager.current = 'principal'
+                self.manager.current = 'principal'
+            else:
+                MDDialog(title="Erro", text="E-mail ou senha incorretos.").open()
 
         except Exception as e:
             print(f"Erro login: {e}")
             MDDialog(title="Erro", text="Falha no login.").open()
 
     def resetar_senha(self, instance):
-        if not auth:
-            MDDialog(title="Erro", text="Firebase indisponível.").open()
+        if not recuperar_senha:
+            MDDialog(title="Erro", text="Recuperação indisponível.").open()
             return
 
         if self.input_email.text:
             try:
-                auth.send_password_reset_email(self.input_email.text)
-                MDDialog(title="Sucesso", text="E-mail enviado.").open()
-            except:
+                ok = recuperar_senha(self.input_email.text.strip())
+                if ok:
+                    MDDialog(title="Sucesso", text="E-mail enviado.").open()
+                else:
+                    MDDialog(title="Erro", text="Falha ao enviar.").open()
+            except Exception as e:
+                print(f"Erro resetar senha: {e}")
                 MDDialog(title="Erro", text="Falha ao enviar.").open()
         else:
             MDDialog(title="Aviso", text="Digite o e-mail.").open()
