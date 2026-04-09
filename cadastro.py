@@ -31,7 +31,7 @@ store = JsonStore('saved_user.json')
 class TelaCadastro(Screen):
     def __init__(self, **kw):
         super().__init__(**kw)
-        Window.softinput_mode = "pan"
+        Window.softinput_mode = "resize"
 
         with self.canvas.before:
             Color(0, 0, 0, 1)
@@ -93,6 +93,13 @@ class TelaCadastro(Screen):
         )
         self.confirma_senha.bind(on_touch_down=self.click_icone_senha)
 
+        # 🔥 estabilização de foco no Android
+        self.nome.bind(focus=self.on_focus_campo)
+        self.data_nasc.bind(focus=self.on_focus_campo)
+        self.email.bind(focus=self.on_focus_campo)
+        self.senha.bind(focus=self.on_focus_campo)
+        self.confirma_senha.bind(focus=self.on_focus_campo)
+
         self.card.add_widget(self.nome)
         self.card.add_widget(self.data_nasc)
         self.card.add_widget(self.email)
@@ -124,12 +131,26 @@ class TelaCadastro(Screen):
         self.add_widget(scroll)
         self.dialogo = None
 
+    def on_pre_enter(self, *args):
+        Window.softinput_mode = "resize"
+
+    def on_focus_campo(self, instance, value):
+        if value:
+            Clock.schedule_once(lambda dt: self.manter_foco(instance), 0.15)
+            Clock.schedule_once(lambda dt: self.manter_foco(instance), 0.35)
+
+    def manter_foco(self, instance):
+        try:
+            instance.focus = True
+        except Exception:
+            pass
+
     def update_rect(self, instance, value):
         self.rect_fundo.pos = instance.pos
         self.rect_fundo.size = instance.size
 
     def click_icone_senha(self, instance, touch):
-        if instance.collide_point(*touch.pos) and touch.pos[0] > instance.right - dp(60):
+        if instance.collide_point(*touch.pos) and touch.pos[0] > instance.right - dp(75):
             instance.password = not instance.password
             instance.icon_right = "eye" if not instance.password else "eye-off"
             return True
