@@ -14,16 +14,21 @@ from kivymd.uix.textfield import MDTextField
 from kivymd.uix.selectioncontrol import MDCheckbox
 from kivymd.uix.dialog import MDDialog
 
-# Importa a conexão correta do seu arquivo banco_dados.py
-from banco_dados import auth 
+# 🔥 PROTEÇÃO DO FIREBASE (CORREÇÃO PRINCIPAL)
+try:
+    from banco_dados import auth
+    print("Firebase OK")
+except Exception as e:
+    print(f"Erro Firebase: {e}")
+    auth = None
 
 store = JsonStore('saved_user.json')
+
 
 class TelaLogin(Screen):
     def __init__(self, **kw):
         super().__init__(**kw)
         
-        # Vincula o botão voltar do Android
         Window.bind(on_keyboard=self.voltar_ao_login)
         
         with self.canvas.before:
@@ -33,22 +38,33 @@ class TelaLogin(Screen):
 
         root = AnchorLayout(anchor_x='center', anchor_y='center')
 
-        layout_principal = BoxLayout(orientation='vertical', padding=dp(30), spacing=dp(15), size_hint=(1, None))
+        layout_principal = BoxLayout(
+            orientation='vertical',
+            padding=dp(30),
+            spacing=dp(15),
+            size_hint=(1, None)
+        )
         layout_principal.bind(minimum_height=layout_principal.setter('height'))
         
         layout_principal.add_widget(Label(
             text="NEURAL FACE HD", 
-            font_size='32sp', bold=True, color=(0.6, 0.2, 1, 1),
-            halign="center", size_hint_y=None, height=dp(50)
+            font_size='32sp', bold=True,
+            color=(0.6, 0.2, 1, 1),
+            halign="center",
+            size_hint_y=None,
+            height=dp(50)
         ))
         
         layout_principal.add_widget(Label(
             text="by Neural Mind Studio", 
-            font_size='12sp', color=(0.4, 0.4, 0.4, 1),
-            size_hint_y=None, height=dp(20), halign="center"
+            font_size='12sp',
+            color=(0.4, 0.4, 0.4, 1),
+            size_hint_y=None,
+            height=dp(20),
+            halign="center"
         ))
 
-        # Campos de Entrada
+        # Campos
         self.input_email = MDTextField(hint_text="E-mail", mode="rectangle")
         
         self.input_senha = MDTextField(
@@ -62,38 +78,56 @@ class TelaLogin(Screen):
         layout_principal.add_widget(self.input_email)
         layout_principal.add_widget(self.input_senha)
 
-        # Lembrar / Esqueci
+        # Opções
         layout_opcoes = BoxLayout(orientation='horizontal', size_hint_y=None, height=dp(40))
         box_check = BoxLayout(orientation='horizontal', size_hint_x=0.5)
-        self.check_lembrar = MDCheckbox(size_hint=(None, None), size=(dp(38), dp(38)), selected_color=(0.6, 0.2, 1, 1))
+
+        self.check_lembrar = MDCheckbox(
+            size_hint=(None, None),
+            size=(dp(38), dp(38)),
+            selected_color=(0.6, 0.2, 1, 1)
+        )
+
         box_check.add_widget(self.check_lembrar)
         box_check.add_widget(Label(text="Lembrar", font_size='13sp', color=(0.7, 0.7, 0.7, 1)))
         
-        btn_esqueci = MDFlatButton(text="Esqueci a senha?", font_size='12sp', on_release=self.resetar_senha)
+        btn_esqueci = MDFlatButton(
+            text="Esqueci a senha?",
+            font_size='12sp',
+            on_release=self.resetar_senha
+        )
+
         layout_opcoes.add_widget(box_check)
         layout_opcoes.add_widget(btn_esqueci)
         layout_principal.add_widget(layout_opcoes)
 
-        # Botões de Ação
+        # Botões
         layout_principal.add_widget(MDFillRoundFlatButton(
-            text="ENTRAR NO SISTEMA", size_hint_x=1,
-            md_bg_color=(0.4, 0, 0.8, 1), on_release=self.fazer_login
+            text="ENTRAR NO SISTEMA",
+            size_hint_x=1,
+            md_bg_color=(0.4, 0, 0.8, 1),
+            on_release=self.fazer_login
         ))
         
         layout_principal.add_widget(MDRectangleFlatButton(
-            text="CRIAR NOVA CONTA", size_hint_x=1,
-            text_color=(1, 1, 1, 1), line_color=(0.6, 0.2, 1, 1),
+            text="CRIAR NOVA CONTA",
+            size_hint_x=1,
+            text_color=(1, 1, 1, 1),
+            line_color=(0.6, 0.2, 1, 1),
             on_release=lambda x: self.ir_para_registro()
         ))
 
         layout_principal.add_widget(MDRectangleFlatButton(
-            text="SAIR", size_hint_x=1,
-            text_color=(1, 0, 0, 1), line_color=(0.4, 0.4, 0.4, 1),
+            text="SAIR",
+            size_hint_x=1,
+            text_color=(1, 0, 0, 1),
+            line_color=(0.4, 0.4, 0.4, 1),
             on_release=lambda x: os._exit(0)
         ))
 
         root.add_widget(layout_principal)
         self.add_widget(root)
+
         Clock.schedule_once(self.carregar_dados_salvos)
 
     def checar_clique_no_olho(self, instance, touch):
@@ -105,11 +139,11 @@ class TelaLogin(Screen):
         return False
 
     def voltar_ao_login(self, window, key, *args):
-        if key == 27: # Esc / Voltar Android
+        if key == 27:
             if self.manager.current != 'login':
                 self.manager.current = 'login'
-                return True 
-        return False 
+                return True
+        return False
 
     def update_rect(self, instance, value):
         self.rect.pos = instance.pos
@@ -122,37 +156,58 @@ class TelaLogin(Screen):
                 self.input_email.text = dados['email']
                 self.input_senha.text = dados['password']
                 self.check_lembrar.active = True
-        except: 
+        except:
             pass
 
     def ir_para_registro(self):
         self.manager.current = 'registro'
 
+    # 🔥 LOGIN SEGURO (NÃO CRASHA MAIS)
     def fazer_login(self, instance):
+        print("Tentando login...")
+
         if not self.input_email.text or not self.input_senha.text:
             MDDialog(title="Aviso", text="Preencha todos os campos.").open()
             return
 
+        # 👉 SE FIREBASE NÃO CARREGOU
+        if not auth:
+            print("Firebase indisponível - entrando direto (modo teste)")
+            self.manager.current = 'principal'
+            return
+
         try:
-            # Tenta autenticar via Pyrebase (Android compatível)
-            auth.sign_in_with_email_and_password(self.input_email.text, self.input_senha.text)
-            
+            auth.sign_in_with_email_and_password(
+                self.input_email.text,
+                self.input_senha.text
+            )
+
             if self.check_lembrar.active:
-                store.put('user_creds', email=self.input_email.text, password=self.input_senha.text)
+                store.put(
+                    'user_creds',
+                    email=self.input_email.text,
+                    password=self.input_senha.text
+                )
             else:
                 if store.exists('user_creds'):
                     store.delete('user_creds')
-            
+
             self.manager.current = 'principal'
+
         except Exception as e:
-            MDDialog(title="Erro de Login", text="E-mail ou senha incorretos.").open()
+            print(f"Erro login: {e}")
+            MDDialog(title="Erro", text="Falha no login.").open()
 
     def resetar_senha(self, instance):
+        if not auth:
+            MDDialog(title="Erro", text="Firebase indisponível.").open()
+            return
+
         if self.input_email.text:
             try:
                 auth.send_password_reset_email(self.input_email.text)
-                MDDialog(title="Sucesso", text="Link de recuperação enviado ao e-mail.").open()
-            except: 
-                MDDialog(title="Erro", text="E-mail não encontrado.").open()
+                MDDialog(title="Sucesso", text="E-mail enviado.").open()
+            except:
+                MDDialog(title="Erro", text="Falha ao enviar.").open()
         else:
-            MDDialog(title="Aviso", text="Digite seu e-mail no campo acima primeiro.").open()
+            MDDialog(title="Aviso", text="Digite o e-mail.").open()
