@@ -30,7 +30,7 @@ android.uses_cleartext_traffic = True
 android.archs = arm64-v8a
 
 p4a.bootstrap = sdl2
-android.entrypoint = main
+android.entrypoint = main.py
 android.copy_libs = 1
 
 [buildozer]
