@@ -1,7 +1,6 @@
 import os
 from kivy.uix.screenmanager import Screen
 from kivy.uix.boxlayout import BoxLayout
-from kivy.uix.anchorlayout import AnchorLayout
 from kivy.uix.label import Label
 from kivy.uix.scrollview import ScrollView
 from kivy.metrics import dp
@@ -41,32 +40,28 @@ class TelaLogin(Screen):
 
         scroll = ScrollView(size_hint=(1, 1), do_scroll_x=False)
 
-        root = AnchorLayout(
-            anchor_x='center',
-            anchor_y='center',
-            size_hint_y=None,
-            padding=[0, dp(30), 0, dp(30)]
-        )
-        root.bind(minimum_height=root.setter('height'))
-
-        layout_principal = BoxLayout(
+        container = BoxLayout(
             orientation='vertical',
+            size_hint_y=None,
             padding=dp(30),
-            spacing=dp(15),
-            size_hint=(1, None)
+            spacing=dp(15)
         )
-        layout_principal.bind(minimum_height=layout_principal.setter('height'))
+        container.bind(minimum_height=container.setter('height'))
 
-        layout_principal.add_widget(Label(
+        # espaço superior
+        container.add_widget(BoxLayout(size_hint_y=None, height=dp(80)))
+
+        container.add_widget(Label(
             text="NEURAL FACE HD",
-            font_size='32sp', bold=True,
+            font_size='32sp',
+            bold=True,
             color=(0.6, 0.2, 1, 1),
             halign="center",
             size_hint_y=None,
             height=dp(50)
         ))
 
-        layout_principal.add_widget(Label(
+        container.add_widget(Label(
             text="by Neural Mind Studio",
             font_size='12sp',
             color=(0.4, 0.4, 0.4, 1),
@@ -75,7 +70,6 @@ class TelaLogin(Screen):
             halign="center"
         ))
 
-        # Campos
         self.input_email = MDTextField(
             hint_text="E-mail",
             mode="rectangle",
@@ -93,10 +87,9 @@ class TelaLogin(Screen):
         )
         self.input_senha.bind(on_touch_down=self.checar_clique_no_olho)
 
-        layout_principal.add_widget(self.input_email)
-        layout_principal.add_widget(self.input_senha)
+        container.add_widget(self.input_email)
+        container.add_widget(self.input_senha)
 
-        # Opções
         layout_opcoes = BoxLayout(
             orientation='horizontal',
             size_hint_y=None,
@@ -116,14 +109,12 @@ class TelaLogin(Screen):
             selected_color=(0.6, 0.2, 1, 1)
         )
 
-        lbl_lembrar = Label(
+        box_check.add_widget(self.check_lembrar)
+        box_check.add_widget(Label(
             text="Lembrar",
             font_size='13sp',
             color=(0.7, 0.7, 0.7, 1)
-        )
-
-        box_check.add_widget(self.check_lembrar)
-        box_check.add_widget(lbl_lembrar)
+        ))
 
         btn_esqueci = MDFlatButton(
             text="Esqueci a senha?",
@@ -133,17 +124,16 @@ class TelaLogin(Screen):
 
         layout_opcoes.add_widget(box_check)
         layout_opcoes.add_widget(btn_esqueci)
-        layout_principal.add_widget(layout_opcoes)
+        container.add_widget(layout_opcoes)
 
-        # Botões
-        layout_principal.add_widget(MDFillRoundFlatButton(
+        container.add_widget(MDFillRoundFlatButton(
             text="ENTRAR NO SISTEMA",
             size_hint_x=1,
             md_bg_color=(0.4, 0, 0.8, 1),
             on_release=self.fazer_login
         ))
 
-        layout_principal.add_widget(MDRectangleFlatButton(
+        container.add_widget(MDRectangleFlatButton(
             text="CRIAR NOVA CONTA",
             size_hint_x=1,
             text_color=(1, 1, 1, 1),
@@ -151,7 +141,7 @@ class TelaLogin(Screen):
             on_release=lambda x: self.ir_para_registro()
         ))
 
-        layout_principal.add_widget(MDRectangleFlatButton(
+        container.add_widget(MDRectangleFlatButton(
             text="SAIR",
             size_hint_x=1,
             text_color=(1, 0, 0, 1),
@@ -159,8 +149,10 @@ class TelaLogin(Screen):
             on_release=lambda x: os._exit(0)
         ))
 
-        root.add_widget(layout_principal)
-        scroll.add_widget(root)
+        # espaço inferior
+        container.add_widget(BoxLayout(size_hint_y=None, height=dp(120)))
+
+        scroll.add_widget(container)
         self.add_widget(scroll)
 
         Clock.schedule_once(self.carregar_dados_salvos)
@@ -200,7 +192,7 @@ class TelaLogin(Screen):
                 self.input_email.text = dados['email']
                 self.input_senha.text = dados['password']
                 self.check_lembrar.active = True
-        except:
+        except Exception:
             pass
 
     def ir_para_registro(self):
