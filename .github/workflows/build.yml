@@ -27,11 +27,16 @@ jobs:
           pip3 install --user --upgrade pip
           pip3 install --user Cython==0.29.33 buildozer
 
-      - name: Clean previous builds (ESSENCIAL)
+      - name: Prepare clean environment
         run: |
           export PATH=$PATH:$HOME/.local/bin
-          buildozer android clean
+
+          # 🔥 limpa corretamente (SEM usar buildozer clean)
           rm -rf .buildozer
+          rm -rf bin
+
+          # 🔧 evita erro interno do p4a
+          mkdir -p .buildozer/android/platform
 
       - name: Build APK
         run: |
