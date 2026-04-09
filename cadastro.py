@@ -17,14 +17,13 @@ from kivymd.uix.button import MDFillRoundFlatButton, MDRectangleFlatButton
 from kivymd.uix.textfield import MDTextField
 from kivymd.uix.dialog import MDDialog
 
-# 🔥 PROTEÇÃO DO FIREBASE
+# 🔥 NOVO FIREBASE VIA REST
 try:
-    from banco_dados import auth, db
-    print("Firebase cadastro OK")
+    from banco_dados import cadastro
+    print("Cadastro REST OK")
 except Exception as e:
-    print(f"Erro Firebase cadastro: {e}")
-    auth = None
-    db = None
+    print(f"Erro banco_dados cadastro: {e}")
+    cadastro = None
 
 store = JsonStore('saved_user.json')
 
@@ -32,6 +31,7 @@ store = JsonStore('saved_user.json')
 class TelaCadastro(Screen):
     def __init__(self, **kw):
         super().__init__(**kw)
+        Window.softinput_mode = "pan"
 
         with self.canvas.before:
             Color(0, 0, 0, 1)
@@ -129,7 +129,7 @@ class TelaCadastro(Screen):
         self.rect_fundo.size = instance.size
 
     def click_icone_senha(self, instance, touch):
-        if instance.collide_point(*touch.pos) and touch.pos[0] > instance.right - dp(50):
+        if instance.collide_point(*touch.pos) and touch.pos[0] > instance.right - dp(60):
             instance.password = not instance.password
             instance.icon_right = "eye" if not instance.password else "eye-off"
             return True
@@ -139,10 +139,10 @@ class TelaCadastro(Screen):
         self.manager.current = 'login'
 
     def iniciar_thread_cadastro(self, instance):
-        if not auth or not db:
+        if not cadastro:
             MDDialog(
                 title="Erro",
-                text="Firebase indisponível no momento."
+                text="Sistema de cadastro indisponível no momento."
             ).open()
             return
 
@@ -168,27 +168,19 @@ class TelaCadastro(Screen):
     def processar_firebase(self):
         e_mail = self.email.text.strip()
         pass_w = self.senha.text.strip()
+        nome = self.nome.text.strip()
 
         try:
-            user = auth.create_user_with_email_and_password(e_mail, pass_w)
-            uid = user['localId']
+            sucesso = cadastro(e_mail, pass_w, nome)
 
-            login_temp = auth.sign_in_with_email_and_password(e_mail, pass_w)
-            token = login_temp['idToken']
-
-            db.child("usuarios").child(uid).set({
-                "nome": self.nome.text.strip(),
-                "creditos": 5,
-                "email": e_mail,
-                "data_cadastro": datetime.now().strftime("%d/%m/%Y %H:%M")
-            }, token)
-
-            Clock.schedule_once(lambda dt: self.sucesso_cadastro(), 0.1)
+            if sucesso:
+                Clock.schedule_once(lambda dt: self.sucesso_cadastro(), 0.1)
+            else:
+                Clock.schedule_once(lambda dt: self.falha_cadastro("E-mail já cadastrado ou erro na conexão."), 0.1)
 
         except Exception as e:
-            print(f"Erro cadastro firebase: {e}")
-            msg = "E-mail já cadastrado" if "EMAIL_EXISTS" in str(e) else "Erro na conexão"
-            Clock.schedule_once(lambda dt: self.falha_cadastro(msg), 0.1)
+            print(f"Erro cadastro: {e}")
+            Clock.schedule_once(lambda dt: self.falha_cadastro("Erro na conexão."), 0.1)
 
     def sucesso_cadastro(self):
         self.btn_registrar.text = "FINALIZAR E GANHAR 5 CRÉDITOS"
