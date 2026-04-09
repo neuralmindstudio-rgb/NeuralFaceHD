@@ -14,7 +14,7 @@ orientation = portrait
 requirements = python3,kivy==2.3.0,kivymd==1.2.0,requests,urllib3,certifi,pyrebase4,pycryptodome,cryptography
 
 # 🔐 Permissões
-android.permissions = INTERNET, CAMERA, READ_EXTERNAL_STORAGE, WRITE_EXTERNAL_STORAGE
+android.permissions = INTERNET, CAMERA, READ_EXTERNAL_STORAGE, WRITE_EXTERNAL_STORAGE, READ_MEDIA_IMAGES
 
 # ⚙️ CONFIG ANDROID ESTÁVEL
 android.api = 33
