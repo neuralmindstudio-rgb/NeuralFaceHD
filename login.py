@@ -3,6 +3,7 @@ from kivy.uix.screenmanager import Screen
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.anchorlayout import AnchorLayout
 from kivy.uix.label import Label
+from kivy.uix.scrollview import ScrollView
 from kivy.metrics import dp
 from kivy.clock import Clock
 from kivy.graphics import Color, Rectangle
@@ -38,7 +39,15 @@ class TelaLogin(Screen):
             self.rect = Rectangle(pos=self.pos, size=self.size)
         self.bind(pos=self.update_rect, size=self.update_rect)
 
-        root = AnchorLayout(anchor_x='center', anchor_y='center')
+        scroll = ScrollView(size_hint=(1, 1), do_scroll_x=False)
+
+        root = AnchorLayout(
+            anchor_x='center',
+            anchor_y='center',
+            size_hint_y=None,
+            padding=[0, dp(30), 0, dp(30)]
+        )
+        root.bind(minimum_height=root.setter('height'))
 
         layout_principal = BoxLayout(
             orientation='vertical',
@@ -67,13 +76,20 @@ class TelaLogin(Screen):
         ))
 
         # Campos
-        self.input_email = MDTextField(hint_text="E-mail", mode="rectangle")
+        self.input_email = MDTextField(
+            hint_text="E-mail",
+            mode="rectangle",
+            size_hint_y=None,
+            height=dp(56)
+        )
 
         self.input_senha = MDTextField(
             hint_text="Senha",
             mode="rectangle",
             password=True,
-            icon_right="eye-off"
+            icon_right="eye-off",
+            size_hint_y=None,
+            height=dp(56)
         )
         self.input_senha.bind(on_touch_down=self.checar_clique_no_olho)
 
@@ -81,8 +97,17 @@ class TelaLogin(Screen):
         layout_principal.add_widget(self.input_senha)
 
         # Opções
-        layout_opcoes = BoxLayout(orientation='horizontal', size_hint_y=None, height=dp(40))
-        box_check = BoxLayout(orientation='horizontal', size_hint_x=0.5, spacing=dp(8))
+        layout_opcoes = BoxLayout(
+            orientation='horizontal',
+            size_hint_y=None,
+            height=dp(48)
+        )
+
+        box_check = BoxLayout(
+            orientation='horizontal',
+            size_hint_x=0.5,
+            spacing=dp(8)
+        )
         box_check.bind(on_touch_down=self.toggle_checkbox_lembrar)
 
         self.check_lembrar = MDCheckbox(
@@ -91,8 +116,14 @@ class TelaLogin(Screen):
             selected_color=(0.6, 0.2, 1, 1)
         )
 
+        lbl_lembrar = Label(
+            text="Lembrar",
+            font_size='13sp',
+            color=(0.7, 0.7, 0.7, 1)
+        )
+
         box_check.add_widget(self.check_lembrar)
-        box_check.add_widget(Label(text="Lembrar", font_size='13sp', color=(0.7, 0.7, 0.7, 1)))
+        box_check.add_widget(lbl_lembrar)
 
         btn_esqueci = MDFlatButton(
             text="Esqueci a senha?",
@@ -129,9 +160,13 @@ class TelaLogin(Screen):
         ))
 
         root.add_widget(layout_principal)
-        self.add_widget(root)
+        scroll.add_widget(root)
+        self.add_widget(scroll)
 
         Clock.schedule_once(self.carregar_dados_salvos)
+
+    def on_pre_enter(self, *args):
+        Window.softinput_mode = "resize"
 
     def toggle_checkbox_lembrar(self, instance, touch):
         if instance.collide_point(*touch.pos):
