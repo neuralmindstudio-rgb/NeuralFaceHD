@@ -1,9 +1,11 @@
 name: Build NeuralFaceHD
+
 on: [push, pull_request]
 
 jobs:
   build:
     runs-on: ubuntu-22.04
+
     steps:
       - uses: actions/checkout@v4
 
@@ -13,22 +15,30 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Install System Dependencies
+      - name: Install dependencies
         run: |
           sudo apt update
-          sudo apt install -y git zip unzip autoconf libtool pkg-config zlib1g-dev libncurses5-dev libncursesw5-dev libtinfo5 cmake libffi-dev libssl-dev libbz2-dev libsqlite3-dev
-          pip3 install --user --upgrade Cython==0.29.33 buildozer
+          sudo apt install -y \
+            git zip unzip autoconf libtool pkg-config \
+            zlib1g-dev libncurses5-dev libncursesw5-dev \
+            libtinfo5 cmake libffi-dev libssl-dev \
+            libbz2-dev libsqlite3-dev
 
-      - name: Build with Buildozer
+          pip3 install --user --upgrade pip
+          pip3 install --user Cython==0.29.33 buildozer
+
+      - name: Clean previous builds (ESSENCIAL)
         run: |
           export PATH=$PATH:$HOME/.local/bin
-          # NÃO usamos o clean aqui para evitar o FileNotFoundError
-          # Rodamos o build direto, aceitando as licenças via variável de ambiente
-          buildozer android debug
+          buildozer android clean
+          rm -rf .buildozer
+
+      - name: Build APK
+        run: |
+          export PATH=$PATH:$HOME/.local/bin
+          buildozer -v android debug
         env:
           APP_ANDROID_ACCEPT_SDK_LICENSE: "1"
-          # Isso garante que o motor p4a seja baixado na versão certa
-          P4A_RELEASE: "master"
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
