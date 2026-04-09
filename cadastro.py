@@ -38,7 +38,8 @@ class TelaCadastro(Screen):
             self.rect_fundo = Rectangle(pos=self.pos, size=self.size)
         self.bind(pos=self.update_rect, size=self.update_rect)
 
-        scroll = ScrollView(size_hint=(1, 1), do_scroll_x=False)
+        self.scroll = ScrollView(size_hint=(1, 1), do_scroll_x=False)
+
         layout_conteudo = BoxLayout(
             orientation='vertical',
             size_hint_y=None,
@@ -127,23 +128,12 @@ class TelaCadastro(Screen):
 
         layout_conteudo.add_widget(self.card)
         layout_conteudo.add_widget(BoxLayout(size_hint_y=None, height=dp(350)))
-        scroll.add_widget(layout_conteudo)
-        self.add_widget(scroll)
+        self.scroll.add_widget(layout_conteudo)
+        self.add_widget(self.scroll)
         self.dialogo = None
 
     def on_pre_enter(self, *args):
         Window.softinput_mode = "resize"
-
-    def on_focus_campo(self, instance, value):
-        if value:
-            Clock.schedule_once(lambda dt: self.manter_foco(instance), 0.15)
-            Clock.schedule_once(lambda dt: self.manter_foco(instance), 0.35)
-
-    def manter_foco(self, instance):
-        try:
-            instance.focus = True
-        except Exception:
-            pass
 
     def update_rect(self, instance, value):
         self.rect_fundo.pos = instance.pos
@@ -155,6 +145,31 @@ class TelaCadastro(Screen):
             instance.icon_right = "eye" if not instance.password else "eye-off"
             return True
         return False
+
+    def on_focus_campo(self, instance, value):
+        if value:
+            Clock.schedule_once(lambda dt: self.manter_foco(instance), 0.10)
+            Clock.schedule_once(lambda dt: self.manter_foco(instance), 0.30)
+            Clock.schedule_once(lambda dt: self.rolar_para_campo(instance), 0.20)
+            Clock.schedule_once(lambda dt: self.rolar_para_campo(instance), 0.45)
+
+    def manter_foco(self, instance):
+        try:
+            instance.focus = True
+        except Exception:
+            pass
+
+    def rolar_para_campo(self, campo):
+        try:
+            y = campo.to_window(campo.x, campo.y)[1]
+            altura_janela = Window.height
+
+            # se o campo estiver na metade inferior, sobe a rolagem
+            if y < altura_janela * 0.45:
+                novo = min(1, self.scroll.scroll_y + 0.18)
+                self.scroll.scroll_y = novo
+        except Exception as e:
+            print(f"Erro ao rolar campo: {e}")
 
     def ir_para_login(self, *args):
         self.manager.current = 'login'
