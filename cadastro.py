@@ -31,8 +31,8 @@ store = JsonStore('saved_user.json')
 class TelaCadastro(Screen):
     def __init__(self, **kw):
         super().__init__(**kw)
-        # ALTERAÇÃO 1: Modo "below_target" é mais eficiente para empurrar os campos para cima
-        Window.softinput_mode = "below_target"
+        # Ajuste para redimensionamento da janela
+        Window.softinput_mode = "resize"
 
         with self.canvas.before:
             Color(0, 0, 0, 1)
@@ -95,6 +95,13 @@ class TelaCadastro(Screen):
         )
         self.confirma_senha.bind(on_touch_down=self.click_icone_senha)
 
+        # Corrigindo o problema de o teclado fechar ao soltar (unfocus)
+        self.nome.bind(on_touch_up=self.garantir_foco)
+        self.data_nasc.bind(on_touch_up=self.garantir_foco)
+        self.email.bind(on_touch_up=self.garantir_foco)
+        self.senha.bind(on_touch_up=self.garantir_foco)
+        self.confirma_senha.bind(on_touch_up=self.garantir_foco)
+
         self.nome.bind(focus=self.on_focus_campo)
         self.data_nasc.bind(focus=self.on_focus_campo)
         self.email.bind(focus=self.on_focus_campo)
@@ -103,6 +110,137 @@ class TelaCadastro(Screen):
 
         self.card.add_widget(self.nome)
         self.card.add_widget(self.data_nasc)
+        self.card.add_widget(self.email)
+        self.card.add_widget(self.senha)
+        self.card.add_widget(self.confirma_senha)
+
+        self.btn_registrar = MDFillRoundFlatButton(
+            text="FINALIZAR E GANHAR 5 CRÉDITOS",
+            md_bg_color=(0.15, 0.6, 0.15, 1),
+            size_hint_x=1,
+            height=dp(50)
+        )
+        self.btn_registrar.bind(on_release=self.iniciar_thread_cadastro)
+
+        self.btn_voltar = MDRectangleFlatButton(
+            text="VOLTAR",
+            text_color=(1, 1, 1, 1),
+            line_color=(0.5, 0.5, 0.5, 1),
+            size_hint_x=1
+        )
+        self.btn_voltar.bind(on_release=self.ir_para_login)
+
+        self.card.add_widget(self.btn_registrar)
+        self.card.add_widget(self.btn_voltar)
+
+        layout_conteudo.add_widget(self.card)
+        
+        # Espaçador dinâmico para o teclado
+        self.espacador_fim = BoxLayout(size_hint_y=None, height=dp(400))
+        layout_conteudo.add_widget(self.espacador_fim)
+
+        self.scroll.add_widget(layout_conteudo)
+        self.add_widget(self.scroll)
+        
+        # Monitora a altura do teclado globalmente
+        Window.bind(on_keyboard_height=self.ajustar_rolagem_teclado)
+
+    def garantir_foco(self, instance, touch):
+        if instance.collide_point(*touch.pos):
+            instance.focus = True
+            return True
+        return False
+
+    def ajustar_rolagem_teclado(self, window, height):
+        if height > 0:
+            self.espacador_fim.height = height + dp(100)
+        else:
+            self.espacador_fim.height = dp(400)
+
+    def on_pre_enter(self, *args):
+        Window.softinput_mode = "resize"
+
+    def update_rect(self, instance, value):
+        self.rect_fundo.pos = instance.pos
+        self.rect_fundo.size = instance.size
+
+    def click_icone_senha(self, instance, touch):
+        if instance.collide_point(*touch.pos) and touch.pos[0] > instance.right - dp(75):
+            instance.password = not instance.password
+            instance.icon_right = "eye" if not instance.password else "eye-off"
+            return True
+        return False
+
+    def on_focus_campo(self, instance, value):
+        if value:
+            Clock.schedule_once(lambda dt: self.rolar_para_campo(instance), 0.2)
+
+    def rolar_para_campo(self, campo):
+        try:
+            self.scroll.scroll_to(campo, padding=dp(250), animate=True)
+        except Exception as e:
+            print(f"Erro ao rolar campo: {e}")
+
+    def ir_para_login(self, *args):
+        self.manager.current = 'login'
+
+    def iniciar_thread_cadastro(self, instance):
+        if not cadastro:
+            MDDialog(
+                title="Erro",
+                text="Sistema de cadastro indisponível no momento."
+            ).open()
+            return
+
+        if self.senha.text != self.confirma_senha.text:
+            MDDialog(title="Erro", text="As senhas não conferem.").open()
+            return
+
+        data_str = self.data_nasc.text.strip()
+        try:
+            nasc = datetime.strptime(data_str, "%d/%m/%Y")
+            idade = (datetime.now() - nasc).days // 365
+            if idade < 18:
+                MDDialog(title="Acesso Restrito", text="Você precisa ter +18 anos.").open()
+                return
+        except Exception:
+            MDDialog(title="Data Inválida", text="Use o formato DD/MM/AAAA").open()
+            return
+
+        self.btn_registrar.text = "PROCESSANDO..."
+        self.btn_registrar.disabled = True
+        threading.Thread(target=self.processar_firebase, daemon=True).start()
+
+    def processar_firebase(self):
+        e_mail = self.email.text.strip()
+        pass_w = self.senha.text.strip()
+        nome = self.nome.text.strip()
+
+        try:
+            sucesso = cadastro(e_mail, pass_w, nome)
+
+            if sucesso:
+                Clock.schedule_once(lambda dt: self.sucesso_cadastro(), 0.1)
+            else:
+                Clock.schedule_once(
+                    lambda dt: self.falha_cadastro("E-mail já cadastrado ou erro na conexão."),
+                    0.1
+                )
+
+        except Exception as e:
+            print(f"Erro cadastro: {e}")
+            Clock.schedule_once(lambda dt: self.falha_cadastro("Erro na conexão."), 0.1)
+
+    def sucesso_cadastro(self):
+        self.btn_registrar.text = "FINALIZAR E GANHAR 5 CRÉDITOS"
+        self.btn_registrar.disabled = False
+        self.manager.current = 'login'
+        MDDialog(title="Sucesso!", text="Conta criada! Faça seu login.").open()
+
+    def falha_cadastro(self, erro):
+        self.btn_registrar.text = "FINALIZAR E GANHAR 5 CRÉDITOS"
+        self.btn_registrar.disabled = False
+        MDDialog(title="Erro", text=erro).open()
         self.card.add_widget(self.email)
         self.card.add_widget(self.senha)
         self.card.add_widget(self.confirma_senha)
