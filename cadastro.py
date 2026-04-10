@@ -161,13 +161,11 @@ class TelaCadastro(Screen):
 
     def rolar_para_campo(self, campo):
         try:
-            y = campo.to_window(campo.x, campo.y)[1]
-            altura_janela = Window.height
-
-            # se o campo estiver na metade inferior, sobe a rolagem
-            if y < altura_janela * 0.45:
-                novo = min(1, self.scroll.scroll_y + 0.18)
-                self.scroll.scroll_y = novo
+            self.scroll.scroll_to(campo, padding=dp(120), animate=False)
+            Clock.schedule_once(
+                lambda dt: self.scroll.scroll_to(campo, padding=dp(160), animate=False),
+                0.15
+            )
         except Exception as e:
             print(f"Erro ao rolar campo: {e}")
 
@@ -209,6 +207,25 @@ class TelaCadastro(Screen):
         try:
             sucesso = cadastro(e_mail, pass_w, nome)
 
+            if sucesso:
+                Clock.schedule_once(lambda dt: self.sucesso_cadastro(), 0.1)
+            else:
+                Clock.schedule_once(lambda dt: self.falha_cadastro("E-mail já cadastrado ou erro na conexão."), 0.1)
+
+        except Exception as e:
+            print(f"Erro cadastro: {e}")
+            Clock.schedule_once(lambda dt: self.falha_cadastro("Erro na conexão."), 0.1)
+
+    def sucesso_cadastro(self):
+        self.btn_registrar.text = "FINALIZAR E GANHAR 5 CRÉDITOS"
+        self.btn_registrar.disabled = False
+        self.manager.current = 'login'
+        MDDialog(title="Sucesso!", text="Conta criada! Faça seu login.").open()
+
+    def falha_cadastro(self, erro):
+        self.btn_registrar.text = "FINALIZAR E GANHAR 5 CRÉDITOS"
+        self.btn_registrar.disabled = False
+        MDDialog(title="Erro", text=erro).open()
             if sucesso:
                 Clock.schedule_once(lambda dt: self.sucesso_cadastro(), 0.1)
             else:
