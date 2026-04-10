@@ -94,7 +94,6 @@ class TelaCadastro(Screen):
         )
         self.confirma_senha.bind(on_touch_down=self.click_icone_senha)
 
-        # 🔥 estabilização de foco no Android
         self.nome.bind(focus=self.on_focus_campo)
         self.data_nasc.bind(focus=self.on_focus_campo)
         self.email.bind(focus=self.on_focus_campo)
@@ -128,6 +127,7 @@ class TelaCadastro(Screen):
 
         layout_conteudo.add_widget(self.card)
         layout_conteudo.add_widget(BoxLayout(size_hint_y=None, height=dp(350)))
+
         self.scroll.add_widget(layout_conteudo)
         self.add_widget(self.scroll)
         self.dialogo = None
@@ -210,26 +210,10 @@ class TelaCadastro(Screen):
             if sucesso:
                 Clock.schedule_once(lambda dt: self.sucesso_cadastro(), 0.1)
             else:
-                Clock.schedule_once(lambda dt: self.falha_cadastro("E-mail já cadastrado ou erro na conexão."), 0.1)
-
-        except Exception as e:
-            print(f"Erro cadastro: {e}")
-            Clock.schedule_once(lambda dt: self.falha_cadastro("Erro na conexão."), 0.1)
-
-    def sucesso_cadastro(self):
-        self.btn_registrar.text = "FINALIZAR E GANHAR 5 CRÉDITOS"
-        self.btn_registrar.disabled = False
-        self.manager.current = 'login'
-        MDDialog(title="Sucesso!", text="Conta criada! Faça seu login.").open()
-
-    def falha_cadastro(self, erro):
-        self.btn_registrar.text = "FINALIZAR E GANHAR 5 CRÉDITOS"
-        self.btn_registrar.disabled = False
-        MDDialog(title="Erro", text=erro).open()
-            if sucesso:
-                Clock.schedule_once(lambda dt: self.sucesso_cadastro(), 0.1)
-            else:
-                Clock.schedule_once(lambda dt: self.falha_cadastro("E-mail já cadastrado ou erro na conexão."), 0.1)
+                Clock.schedule_once(
+                    lambda dt: self.falha_cadastro("E-mail já cadastrado ou erro na conexão."),
+                    0.1
+                )
 
         except Exception as e:
             print(f"Erro cadastro: {e}")
