@@ -40,14 +40,13 @@ except ImportError:
     share = None
     filechooser = None
 
-# 🔥 PROTEÇÃO DO FIREBASE
+# 🔥 BANCO VIA REST
 try:
-    from banco_dados import db, auth
-    print("Firebase interface_ia OK")
+    import banco_dados as bd
+    print("Banco REST interface_ia OK")
 except Exception as e:
-    print(f"Erro Firebase interface_ia: {e}")
-    db = None
-    auth = None
+    print(f"Erro banco_dados interface_ia: {e}")
+    bd = None
 
 tutorial_store = JsonStore('tutorial_status.json')
 
@@ -69,41 +68,7 @@ class TelaPrincipal(Screen):
         self.path_base = ""
         self.path_rosto = ""
         self.imagem_final_pronta = False
-        self.servidor_online = False
-        self.arquivo_gerado_agora = ""
-        self.ultima_combinacao = ""
-        self.dialogo_termos = None
-        self.dialogo_tutorial = None
-        self.dialogo_save_choice = None
-        self.dialogo_sem_creditos = None
-        self.file_manager_aberto = False
-        self.th = None
-        self.processando_agora = False
-
-        self.file_manager = MDFileManager(
-            exit_manager=self.fechar_seletor,
-            select_path=self.processar_selecao_kivymd,
-            preview=True,
-        )
-
-        layout_geral = FloatLayout()
-
-        self.barra_t = BoxLayout(
-            size_hint=(1, None),
-            height=dp(55),
-            spacing=dp(10),
-            padding=dp(10),
-            pos_hint={'top': 1}
-        )
-
-        self.btn_sair = MDRectangleFlatButton(
-            text="LOGOUT",
-            theme_text_color="Custom",
-            text_color=(1, 0, 0, 1),
-            line_color=(1, 0, 0, 1)
-        )
-        self.btn_sair.bind(on_release=self.fazer_logout)
-
+        self.servid
         self.btn_salvar = MDRoundFlatIconButton(
             text="SALVAR",
             icon="download",
