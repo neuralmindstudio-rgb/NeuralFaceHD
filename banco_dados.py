@@ -4,13 +4,13 @@ import requests
 API_KEY = "AIzaSyD2WCCt8zsbIvT3h1FgjXkGwmTXwPBTBac"
 DATABASE_URL = "https://neuralfacehd-default-rtdb.firebaseio.com"
 
-# 🔥 VARIÁVEIS DE SESSÃO (Essenciais para manter o usuário logado)
+# 🔥 VARIÁVEIS DE SESSÃO
 current_user = None
 id_token = None
 local_id = None
 
 # =========================
-# 🔐 CLASSE PARA SIMULAR O PYREBASE (Para o seu código não quebrar)
+# 🔐 CLASSE PARA SIMULAR O PYREBASE (Compatível com seu código Pydroid)
 # =========================
 class FirebaseAuth:
     def sign_in_with_email_and_password(self, email, senha):
@@ -55,54 +55,40 @@ class FirebaseDB:
         return self
 
     def set(self, dados, token=None):
-        # Aqui simulamos a gravação no Realtime Database
         global local_id
         target_id = local_id if local_id else "temp"
         auth_param = f"?auth={token}" if token else ""
         url = f"{DATABASE_URL}/usuarios/{target_id}.json{auth_param}"
-        requests.put(url, json=dados)
+        try:
+            requests.put(url, json=dados)
+        except Exception as e:
+            print(f"Erro ao salvar no banco: {e}")
 
-# Criamos as instâncias para o seu código importar
+# Instâncias para o seu código principal importar
 auth = FirebaseAuth()
 db = FirebaseDB()
-if not local_id or not id_token:
+
+# Funções extras de utilidade
+def pegar_creditos():
+    global id_token, local_id
+    if not local_id or not id_token:
         return 0
-
-    # Sempre use o token para ler dados protegidos
     url = f"{DATABASE_URL}/usuarios/{local_id}/creditos.json?auth={id_token}"
-
     try:
         res = requests.get(url)
-        if res.status_code == 200:
-            return res.json() or 0
-        return 0
+        return res.json() or 0
     except:
         return 0
 
-# =========================
-# 💸 ATUALIZAR CRÉDITOS
-# =========================
 def atualizar_creditos(novo_valor):
     global id_token, local_id
     if not local_id or not id_token:
         return
-
     url = f"{DATABASE_URL}/usuarios/{local_id}.json?auth={id_token}"
-
     try:
         requests.patch(url, json={"creditos": novo_valor})
-    except Exception as e:
-        print(f"Erro atualizar créditos: {e}")
-
-# =========================
-# 🔑 RECUPERAR SENHA
-# =========================
-def recuperar_senha(email):
-    url = f"https://identitytoolkit.googleapis.com/v1/accounts:sendOobCode?key={API_KEY}"
-
-    payload = {
-        "requestType": "PASSWORD_RESET",
-        "email": email
+    except:
+        pass
     }
 
     try:
