@@ -31,8 +31,9 @@ store = JsonStore('saved_user.json')
 class TelaCadastro(Screen):
     def __init__(self, **kw):
         super().__init__(**kw)
-        # Forçamos o modo que redimensiona a janela inteira
-        Window.softinput_mode = "resize"
+        # 1. Mudança para 'below_target': evita que a tela tente se redimensionar 
+        # e cause o loop infinito/piscadeira.
+        Window.softinput_mode = "below_target"
 
         with self.canvas.before:
             Color(0, 0, 0, 1)
@@ -41,11 +42,10 @@ class TelaCadastro(Screen):
 
         self.scroll = ScrollView(size_hint=(1, 1), do_scroll_x=False)
 
-        # O segredo: padding inferior alto para permitir rolagem manual se tudo falhar
         self.layout_conteudo = BoxLayout(
             orientation='vertical',
             size_hint_y=None,
-            padding=[dp(20), dp(20), dp(20), dp(100)],
+            padding=[dp(20), dp(20), dp(20), dp(40)],
             spacing=dp(15)
         )
         self.layout_conteudo.bind(minimum_height=self.layout_conteudo.setter('height'))
@@ -53,7 +53,7 @@ class TelaCadastro(Screen):
         self.card = MDCard(
             orientation='vertical',
             size_hint=(1, None),
-            height=dp(700),
+            height=dp(680),
             padding=dp(20),
             spacing=dp(10),
             md_bg_color=(0.07, 0.07, 0.08, 1),
@@ -96,13 +96,129 @@ class TelaCadastro(Screen):
         )
         self.confirma_senha.bind(on_touch_down=self.click_icone_senha)
 
-        # Prevenir que o teclado feche ao soltar o clique
-        self.nome.bind(on_touch_up=self.garantir_foco)
-        self.data_nasc.bind(on_touch_up=self.garantir_foco)
-        self.email.bind(on_touch_up=self.garantir_foco)
-        self.senha.bind(on_touch_up=self.garantir_foco)
-        self.confirma_senha.bind(on_touch_up=self.garantir_foco)
+        # 2. Mantemos apenas o bind de foco simplificado para evitar loops
+        self.nome.bind(focus=self.on_focus_campo)
+        self.data_nasc.bind(focus=self.on_focus_campo)
+        self.email.bind(focus=self.on_focus_campo)
+        self.senha.bind(focus=self.on_focus_campo)
+        self.confirma_senha.bind(focus=self.on_focus_campo)
 
+        self.card.add_widget(self.nome)
+        self.card.add_widget(self.data_nasc)
+        self.card.add_widget(self.email)
+        self.card.add_widget(self.senha)
+        self.card.add_widget(self.confirma_senha)
+
+        self.btn_registrar = MDFillRoundFlatButton(
+            text="FINALIZAR E GANHAR 5 CRÉDITOS",
+            md_bg_color=(0.15, 0.6, 0.15, 1),
+            size_hint_x=1,
+            height=dp(50)
+        )
+        self.btn_registrar.bind(on_release=self.iniciar_thread_cadastro)
+
+        self.btn_voltar = MDRectangleFlatButton(
+            text="VOLTAR",
+            text_color=(1, 1, 1, 1),
+            line_color=(0.5, 0.5, 0.5, 1),
+            size_hint_x=1
+        )
+        self.btn_voltar.bind(on_release=self.ir_para_login)
+
+        self.card.add_widget(self.btn_registrar)
+        self.card.add_widget(self.btn_voltar)
+
+        self.layout_conteudo.add_widget(self.card)
+        
+        # 3. Espaçador fixo no final para permitir que o ScrollView suba os campos
+        self.espacador_final = BoxLayout(size_hint_y=None, height=dp(400))
+        self.layout_conteudo.add_widget(self.espacador_final)
+
+        self.scroll.add_widget(self.layout_conteudo)
+        self.add_widget(self.scroll)
+
+    def on_pre_enter(self, *args):
+        Window.softinput_mode = "below_target"
+
+    def update_rect(self, instance, value):
+        self.rect_fundo.pos = instance.pos
+        self.rect_fundo.size = instance.size
+
+    def click_icone_senha(self, instance, touch):
+        if instance.collide_point(*touch.pos) and touch.pos[0] > instance.right - dp(75):
+            instance.password = not instance.password
+            instance.icon_right = "eye" if not instance.password else "eye-off"
+            return True
+        return False
+
+    def on_focus_campo(self, instance, value):
+        if value:
+            # 4. Rola apenas uma vez com delay para o teclado se estabilizar
+            Clock.schedule_once(lambda dt: self.rolar_para_campo(instance), 0.2)
+
+    def rolar_para_campo(self, campo):
+        try:
+            # Padding ajustado para deixar o campo bem visível acima do teclado
+            self.scroll.scroll_to(campo, padding=dp(200), animate=True)
+        except Exception as e:
+            print(f"Erro ao rolar campo: {e}")
+
+    def ir_para_login(self, *args):
+        self.manager.current = 'login'
+
+    def iniciar_thread_cadastro(self, instance):
+        if not cadastro:
+            MDDialog(title="Erro", text="Sistema indisponível.").open()
+            return
+
+        if self.senha.text != self.confirma_senha.text:
+            MDDialog(title="Erro", text="As senhas não conferem.").open()
+            return
+        
+        if len(self.senha.text) < 6:
+            MDDialog(title="Erro", text="A senha deve ter 6 dígitos.").open()
+            return
+
+        data_str = self.data_nasc.text.strip()
+        try:
+            nasc = datetime.strptime(data_str, "%d/%m/%Y")
+            idade = (datetime.now() - nasc).days // 365
+            if idade < 18:
+                MDDialog(title="Acesso Restrito", text="Você precisa ter +18 anos.").open()
+                return
+        except Exception:
+            MDDialog(title="Data Inválida", text="Use o formato DD/MM/AAAA").open()
+            return
+
+        self.btn_registrar.text = "PROCESSANDO..."
+        self.btn_registrar.disabled = True
+        threading.Thread(target=self.processar_firebase, daemon=True).start()
+
+    def processar_firebase(self):
+        # Strip e Lower para evitar erros de login depois
+        e_mail = self.email.text.strip().lower()
+        pass_w = self.senha.text.strip()
+        nome = self.nome.text.strip()
+
+        try:
+            sucesso = cadastro(e_mail, pass_w, nome)
+            if sucesso:
+                Clock.schedule_once(lambda dt: self.sucesso_cadastro(), 0.1)
+            else:
+                Clock.schedule_once(lambda dt: self.falha_cadastro("E-mail já cadastrado ou erro na rede."), 0.1)
+        except Exception as e:
+            Clock.schedule_once(lambda dt: self.falha_cadastro(f"Erro: {e}"), 0.1)
+
+    def sucesso_cadastro(self):
+        self.btn_registrar.text = "FINALIZAR E GANHAR 5 CRÉDITOS"
+        self.btn_registrar.disabled = False
+        MDDialog(title="Sucesso!", text="Conta criada! Faça o login.").open()
+        self.manager.current = 'login'
+
+    def falha_cadastro(self, erro):
+        self.btn_registrar.text = "FINALIZAR E GANHAR 5 CRÉDITOS"
+        self.btn_registrar.disabled = False
+        MDDialog(title="Erro", text=erro).open()
         self.nome.bind(focus=self.on_focus_campo)
         self.data_nasc.bind(focus=self.on_focus_campo)
         self.email.bind(focus=self.on_focus_campo)
