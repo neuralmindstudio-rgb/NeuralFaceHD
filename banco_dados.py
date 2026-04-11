@@ -1,4 +1,3 @@
-
 import requests
 
 # 🔑 CONFIG FIREBASE
@@ -10,6 +9,9 @@ current_user = None
 id_token = None
 local_id = None
 
+# =========================
+# 🔐 CLASSES DE COMPATIBILIDADE (Estilo Pyrebase/Pydroid)
+# =========================
 class FirebaseAuth:
     def sign_in_with_email_and_password(self, email, senha):
         global id_token, local_id, current_user
@@ -58,8 +60,40 @@ class FirebaseDB:
         except Exception as e:
             print(f"Erro ao salvar: {e}")
 
+# Instâncias para o código que usa auth.funcao()
 auth = FirebaseAuth()
 db = FirebaseDB()
+
+# =========================
+# 🚀 FUNÇÕES DIRETAS (Para evitar o erro "Sistema Indisponível")
+# =========================
+
+def login(email, senha):
+    try:
+        resultado = auth.sign_in_with_email_and_password(email, senha)
+        return True if resultado else False
+    except:
+        return False
+
+def cadastro(email, senha, nome):
+    try:
+        user = auth.create_user_with_email_and_password(email, senha)
+        u_id = user['localId']
+        token = user['idToken']
+        db.child("usuarios").set({
+            "nome": nome,
+            "email": email,
+            "creditos": 5
+        }, token)
+        return True
+    except:
+        return False
+
+def recuperar_senha(email):
+    try:
+        return auth.send_password_reset_email(email)
+    except:
+        return False
 
 def pegar_creditos():
     global id_token, local_id
@@ -81,4 +115,3 @@ def atualizar_creditos(novo_valor):
         requests.patch(url, json={"creditos": novo_valor})
     except:
         pass
-
