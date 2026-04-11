@@ -4,106 +4,68 @@ import requests
 API_KEY = "AIzaSyD2WCCt8zsbIvT3h1FgjXkGwmTXwPBTBac"
 DATABASE_URL = "https://neuralfacehd-default-rtdb.firebaseio.com"
 
-# 🔥 VARIÁVEIS DE SESSÃO
+# 🔥 VARIÁVEIS DE SESSÃO (Essenciais para manter o usuário logado)
 current_user = None
 id_token = None
 local_id = None
 
 # =========================
-# 🔐 LOGIN
+# 🔐 CLASSE PARA SIMULAR O PYREBASE (Para o seu código não quebrar)
 # =========================
-def login(email, senha):
-    global current_user, id_token, local_id
-
-    url = f"https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key={API_KEY}"
-
-    payload = {
-        "email": email,
-        "password": senha,
-        "returnSecureToken": True
-    }
-
-    try:
+class FirebaseAuth:
+    def sign_in_with_email_and_password(self, email, senha):
+        global id_token, local_id, current_user
+        url = f"https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key={API_KEY}"
+        payload = {"email": email, "password": senha, "returnSecureToken": True}
+        
         res = requests.post(url, json=payload)
         data = res.json()
-
+        
         if "idToken" in data:
-            # IMPORTANTE: Preencher as globais antes de retornar True
             id_token = data["idToken"]
             local_id = data["localId"]
             current_user = data
-            print(f"LOGIN OK para o UID: {local_id}")
-            return True
+            return data
         else:
-            # Caso o Firebase retorne erro (senha errada, user não existe)
-            msg_erro = data.get("error", {}).get("message", "ERRO_DESCONHECIDO")
-            print(f"Erro login Firebase: {msg_erro}")
-            return False
+            raise Exception(data.get("error", {}).get("message", "LOGIN_FAILED"))
 
-    except Exception as e:
-        print(f"Erro conexão login: {e}")
-        return False
-
-# =========================
-# 📝 CADASTRO
-# =========================
-def cadastro(email, senha, nome):
-    url = f"https://identitytoolkit.googleapis.com/v1/accounts:signUp?key={API_KEY}"
-
-    payload = {
-        "email": email,
-        "password": senha,
-        "returnSecureToken": True
-    }
-
-    try:
+    def create_user_with_email_and_password(self, email, senha):
+        url = f"https://identitytoolkit.googleapis.com/v1/accounts:signUp?key={API_KEY}"
+        payload = {"email": email, "password": senha, "returnSecureToken": True}
+        
         res = requests.post(url, json=payload)
         data = res.json()
-
+        
         if "localId" in data:
-            uid = data["localId"]
-            token = data["idToken"] # Pegamos o token gerado no cadastro
-            
-            # Passamos o token para salvar no banco com permissão
-            salvar_usuario(uid, nome, email, token)
-
-            print("CADASTRO OK")
-            return True
+            return data
         else:
-            print(f"Erro cadastro: {data}")
-            return False
+            raise Exception(data.get("error", {}).get("message", "SIGNUP_FAILED"))
 
-    except Exception as e:
-        print(f"Erro conexão cadastro: {e}")
-        return False
-
-# =========================
-# 💾 SALVAR USUÁRIO
-# =========================
-def salvar_usuario(uid, nome, email, token=None):
-    # Adicionamos o parâmetro ?auth={token} para evitar erro de permissão (Permission Denied)
-    auth_url = f"?auth={token}" if token else ""
-    url = f"{DATABASE_URL}/usuarios/{uid}.json{auth_url}"
-
-    dados = {
-        "nome": nome,
-        "email": email,
-        "creditos": 5
-    }
-
-    try:
-        res = requests.put(url, json=dados)
+    def send_password_reset_email(self, email):
+        url = f"https://identitytoolkit.googleapis.com/v1/accounts:sendOobCode?key={API_KEY}"
+        payload = {"requestType": "PASSWORD_RESET", "email": email}
+        res = requests.post(url, json=payload)
         if res.status_code != 200:
-            print(f"Erro ao salvar no Realtime: {res.text}")
-    except Exception as e:
-        print(f"Erro salvar usuario: {e}")
+            raise Exception("RESET_FAILED")
+        return True
 
-# =========================
-# 💰 PEGAR CRÉDITOS
-# =========================
-def pegar_creditos():
-    global id_token, local_id
-    if not local_id or not id_token:
+class FirebaseDB:
+    def child(self, name):
+        self.current_child = name
+        return self
+
+    def set(self, dados, token=None):
+        # Aqui simulamos a gravação no Realtime Database
+        global local_id
+        target_id = local_id if local_id else "temp"
+        auth_param = f"?auth={token}" if token else ""
+        url = f"{DATABASE_URL}/usuarios/{target_id}.json{auth_param}"
+        requests.put(url, json=dados)
+
+# Criamos as instâncias para o seu código importar
+auth = FirebaseAuth()
+db = FirebaseDB()
+if not local_id or not id_token:
         return 0
 
     # Sempre use o token para ler dados protegidos
