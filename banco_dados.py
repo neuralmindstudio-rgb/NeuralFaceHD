@@ -1,3 +1,4 @@
+
 import requests
 
 # 🔑 CONFIG FIREBASE
@@ -9,18 +10,13 @@ current_user = None
 id_token = None
 local_id = None
 
-# =========================
-# 🔐 CLASSE PARA SIMULAR O PYREBASE (Compatível com seu código Pydroid)
-# =========================
 class FirebaseAuth:
     def sign_in_with_email_and_password(self, email, senha):
         global id_token, local_id, current_user
         url = f"https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key={API_KEY}"
         payload = {"email": email, "password": senha, "returnSecureToken": True}
-        
         res = requests.post(url, json=payload)
         data = res.json()
-        
         if "idToken" in data:
             id_token = data["idToken"]
             local_id = data["localId"]
@@ -32,10 +28,8 @@ class FirebaseAuth:
     def create_user_with_email_and_password(self, email, senha):
         url = f"https://identitytoolkit.googleapis.com/v1/accounts:signUp?key={API_KEY}"
         payload = {"email": email, "password": senha, "returnSecureToken": True}
-        
         res = requests.post(url, json=payload)
         data = res.json()
-        
         if "localId" in data:
             return data
         else:
@@ -62,13 +56,11 @@ class FirebaseDB:
         try:
             requests.put(url, json=dados)
         except Exception as e:
-            print(f"Erro ao salvar no banco: {e}")
+            print(f"Erro ao salvar: {e}")
 
-# Instâncias para o seu código principal importar
 auth = FirebaseAuth()
 db = FirebaseDB()
 
-# Funções extras de utilidade
 def pegar_creditos():
     global id_token, local_id
     if not local_id or not id_token:
@@ -89,50 +81,4 @@ def atualizar_creditos(novo_valor):
         requests.patch(url, json={"creditos": novo_valor})
     except:
         pass
-    }
 
-    try:
-        res = requests.post(url, json=payload)
-        return res.status_code == 200
-    except Exception as e:
-        print(f"Erro recuperar senha: {e}")
-        return False
-    try:
-        res = requests.get(url)
-        return res.json() or 0
-    except:
-        return 0
-
-
-# =========================
-# 💸 ATUALIZAR CRÉDITOS
-# =========================
-def atualizar_creditos(novo_valor):
-    if not local_id:
-        return
-
-    url = f"{DATABASE_URL}/usuarios/{local_id}.json"
-
-    try:
-        requests.patch(url, json={"creditos": novo_valor})
-    except Exception as e:
-        print(f"Erro atualizar créditos: {e}")
-
-
-# =========================
-# 🔑 RECUPERAR SENHA
-# =========================
-def recuperar_senha(email):
-    url = f"https://identitytoolkit.googleapis.com/v1/accounts:sendOobCode?key={API_KEY}"
-
-    payload = {
-        "requestType": "PASSWORD_RESET",
-        "email": email
-    }
-
-    try:
-        res = requests.post(url, json=payload)
-        return res.status_code == 200
-    except Exception as e:
-        print(f"Erro recuperar senha: {e}")
-        return False
