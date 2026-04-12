@@ -1,4 +1,16 @@
 import requests
+import os
+
+# Força o Python a usar os certificados corretos no Android
+try:
+    import certifi
+    os.environ['SSL_CERT_FILE'] = certifi.where()
+except ImportError:
+    pass
+
+# ... restante do código (API_KEY, classes, etc)
+
+import requests
 
 # 🔑 CONFIG FIREBASE
 API_KEY = "AIzaSyD2WCCt8zsbIvT3h1FgjXkGwmTXwPBTBac"
