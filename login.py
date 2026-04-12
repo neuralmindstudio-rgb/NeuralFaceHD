@@ -63,6 +63,35 @@ class TelaLogin(Screen):
         container.add_widget(Label(
             text="by Neural Mind Studio",
             font_size='12sp',
+            color=(0            self.rect = Rectangle(pos=self.pos, size=self.size)
+        self.bind(pos=self.update_rect, size=self.update_rect)
+
+        scroll = ScrollView(size_hint=(1, 1), do_scroll_x=False)
+
+        container = BoxLayout(
+            orientation='vertical',
+            size_hint_y=None,
+            padding=dp(30),
+            spacing=dp(15)
+        )
+        container.bind(minimum_height=container.setter('height'))
+
+        # espaço superior
+        container.add_widget(BoxLayout(size_hint_y=None, height=dp(80)))
+
+        container.add_widget(Label(
+            text="NEURAL FACE HD",
+            font_size='32sp',
+            bold=True,
+            color=(0.6, 0.2, 1, 1),
+            halign="center",
+            size_hint_y=None,
+            height=dp(50)
+        ))
+
+        container.add_widget(Label(
+            text="by Neural Mind Studio",
+            font_size='12sp',
             color=(0.4, 0.4, 0.4, 1),
             size_hint_y=None,
             height=dp(20),
