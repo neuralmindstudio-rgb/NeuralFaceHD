@@ -33,12 +33,25 @@ from kivymd.uix.boxlayout import MDBoxLayout
 from kivymd.uix.dialog import MDDialog
 from kivymd.uix.menu import MDDropdownMenu
 
-# Funções nativas do Android via Plyer
+# Plyer como fallback fora do Android
 try:
     from plyer import share, filechooser
 except ImportError:
     share = None
     filechooser = None
+
+# Android nativo
+try:
+    from jnius import autoclass, cast
+    from android import activity
+    from android.runnable import run_on_ui_thread
+    ANDROID_OK = True
+except Exception:
+    autoclass = None
+    cast = None
+    activity = None
+    run_on_ui_thread = None
+    ANDROID_OK = False
 
 # 🔥 BANCO VIA REST
 try:
@@ -52,6 +65,8 @@ tutorial_store = JsonStore('tutorial_status.json')
 
 
 class TelaPrincipal(Screen):
+    PICK_IMAGE_REQUEST = 1001
+
     def __init__(self, **kw):
         super().__init__(**kw)
         Window.clearcolor = (0, 0, 0, 1)
@@ -86,6 +101,12 @@ class TelaPrincipal(Screen):
             select_path=self.processar_selecao_kivymd,
             preview=True,
         )
+
+        if ANDROID_OK:
+            try:
+                activity.bind(on_activity_result=self.on_activity_result)
+            except Exception as e:
+                print(f"Erro bind activity result: {e}")
 
         layout_geral = FloatLayout()
 
@@ -266,6 +287,36 @@ class TelaPrincipal(Screen):
             width_mult=4
         )
 
+    # =========================
+    # ANDROID SYSTEM BARS
+    # =========================
+    def mostrar_barras_android(self):
+        if not ANDROID_OK:
+            return
+
+        try:
+            PythonActivity = autoclass('org.kivy.android.PythonActivity')
+            View = autoclass('android.view.View')
+            LayoutParams = autoclass('android.view.WindowManager$LayoutParams')
+            currentActivity = PythonActivity.mActivity
+
+            @run_on_ui_thread
+            def _mostrar():
+                try:
+                    window = currentActivity.getWindow()
+                    decor = window.getDecorView()
+                    window.clearFlags(LayoutParams.FLAG_FULLSCREEN)
+                    decor.setSystemUiVisibility(View.SYSTEM_UI_FLAG_VISIBLE)
+                except Exception as e:
+                    print(f"Erro mostrar barras Android: {e}")
+
+            _mostrar()
+        except Exception as e:
+            print(f"Erro preparar barras Android: {e}")
+
+    # =========================
+    # MENU
+    # =========================
     def abrir_menu(self, instance):
         self.dropdown.open()
 
@@ -279,8 +330,20 @@ class TelaPrincipal(Screen):
                 text="Neural Face HD v1.0\n\nAI avançada para imagens."
             ).open()
 
+    # =========================
+    # SELETOR NATIVO ANDROID
+    # =========================
     def abrir_seletor_nativo(self, tipo):
         self.tipo_atual = tipo
+
+        if ANDROID_OK:
+            try:
+                self.abrir_seletor_android()
+                return
+            except Exception as e:
+                print(f"Erro seletor Android nativo: {e}")
+
+        # fallback fora do Android
         if filechooser:
             try:
                 filechooser.open_file(on_selection=self.processar_selecao_nativa)
@@ -288,6 +351,75 @@ class TelaPrincipal(Screen):
                 self.abrir_fallback_filemanager()
         else:
             self.abrir_fallback_filemanager()
+
+    def abrir_seletor_android(self):
+        PythonActivity = autoclass('org.kivy.android.PythonActivity')
+        Intent = autoclass('android.content.Intent')
+        currentActivity = PythonActivity.mActivity
+
+        intent = Intent(Intent.ACTION_OPEN_DOCUMENT)
+        intent.addCategory(Intent.CATEGORY_OPENABLE)
+        intent.setType("image/*")
+        intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        intent.addFlags(Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION)
+
+        currentActivity.startActivityForResult(intent, self.PICK_IMAGE_REQUEST)
+
+    def on_activity_result(self, request_code, result_code, intent):
+        if request_code != self.PICK_IMAGE_REQUEST:
+            return
+
+        if not ANDROID_OK:
+            return
+
+        try:
+            Activity = autoclass('android.app.Activity')
+            if result_code != Activity.RESULT_OK or intent is None:
+                return
+
+            uri = intent.getData()
+            if uri is None:
+                return
+
+            caminho_local = self.copiar_uri_para_arquivo(uri)
+            if caminho_local:
+                Clock.schedule_once(lambda dt: self.select_path(caminho_local))
+        except Exception as e:
+            print(f"Erro on_activity_result: {e}")
+
+    def copiar_uri_para_arquivo(self, uri):
+        try:
+            PythonActivity = autoclass('org.kivy.android.PythonActivity')
+            currentActivity = PythonActivity.mActivity
+            resolver = currentActivity.getContentResolver()
+
+            try:
+                flags = (
+                    autoclass('android.content.Intent').FLAG_GRANT_READ_URI_PERMISSION |
+                    autoclass('android.content.Intent').FLAG_GRANT_PERSISTABLE_URI_PERMISSION
+                )
+                currentActivity.getContentResolver().takePersistableUriPermission(uri, flags)
+            except Exception:
+                pass
+
+            pfd = resolver.openFileDescriptor(uri, "r")
+            if pfd is None:
+                return ""
+
+            fd = pfd.detachFd()
+            pasta_destino = os.path.join(App.get_running_app().user_data_dir, "selecoes")
+            os.makedirs(pasta_destino, exist_ok=True)
+
+            nome_arquivo = f"{self.tipo_atual}_{int(time.time() * 1000)}.jpg"
+            caminho_destino = os.path.join(pasta_destino, nome_arquivo)
+
+            with os.fdopen(fd, "rb") as origem, open(caminho_destino, "wb") as destino:
+                shutil.copyfileobj(origem, destino)
+
+            return caminho_destino
+        except Exception as e:
+            print(f"Erro copiar URI para arquivo: {e}")
+            return ""
 
     def abrir_fallback_filemanager(self):
         self.file_manager_aberto = True
@@ -334,6 +466,9 @@ class TelaPrincipal(Screen):
             if self.path_base:
                 self.recriar_widget_imagem(self.path_base)
 
+    # =========================
+    # SALVAR / COMPARTILHAR
+    # =========================
     def abrir_menu_salvamento(self, instance):
         content = MDBoxLayout(
             orientation="vertical",
@@ -372,12 +507,69 @@ class TelaPrincipal(Screen):
     def compartilhar_resultado(self, *args):
         if self.dialogo_save_choice:
             self.dialogo_save_choice.dismiss()
-        if share and self.arquivo_gerado_agora:
+
+        if not self.arquivo_gerado_agora or not os.path.exists(self.arquivo_gerado_agora):
+            self.label_s.text = "ARQUIVO NÃO ENCONTRADO"
+            return
+
+        # Android nativo
+        if ANDROID_OK:
+            try:
+                self.compartilhar_android(self.arquivo_gerado_agora)
+                return
+            except Exception as e:
+                print(f"Erro compartilhar Android: {e}")
+
+        # fallback
+        if share:
             try:
                 share.share(filepath=self.arquivo_gerado_agora)
             except Exception:
                 self.label_s.text = "ERRO AO COMPARTILHAR"
+        else:
+            self.label_s.text = "COMPARTILHAMENTO INDISPONÍVEL"
 
+    def compartilhar_android(self, caminho_arquivo):
+        PythonActivity = autoclass('org.kivy.android.PythonActivity')
+        Intent = autoclass('android.content.Intent')
+        MediaStoreImagesMedia = autoclass('android.provider.MediaStore$Images$Media')
+        ContentValues = autoclass('android.content.ContentValues')
+        currentActivity = PythonActivity.mActivity
+        resolver = currentActivity.getContentResolver()
+
+        valores = ContentValues()
+        nome = f"NeuralFace_{int(time.time())}.jpg"
+        valores.put("_display_name", nome)
+        valores.put("mime_type", "image/jpeg")
+
+        try:
+            valores.put("relative_path", "Pictures/NeuralFaceHD")
+        except Exception:
+            pass
+
+        uri = resolver.insert(MediaStoreImagesMedia.EXTERNAL_CONTENT_URI, valores)
+        if uri is None:
+            raise Exception("Falha ao criar URI para compartilhamento")
+
+        pfd = resolver.openFileDescriptor(uri, "w")
+        if pfd is None:
+            raise Exception("Falha ao abrir destino de compartilhamento")
+
+        fd = pfd.detachFd()
+        with open(caminho_arquivo, "rb") as origem, os.fdopen(fd, "wb") as destino:
+            shutil.copyfileobj(origem, destino)
+
+        intent = Intent(Intent.ACTION_SEND)
+        intent.setType("image/jpeg")
+        intent.putExtra(Intent.EXTRA_STREAM, cast('android.os.Parcelable', uri))
+        intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+
+        chooser = Intent.createChooser(intent, "Compartilhar imagem")
+        currentActivity.startActivity(chooser)
+
+    # =========================
+    # IA / PROCESSAMENTO
+    # =========================
     def enviar_ao_pc(self, instance):
         if not bd or not bd.local_id:
             self.label_s.text = "LOGIN NECESSÁRIO"
@@ -526,6 +718,9 @@ class TelaPrincipal(Screen):
         )
         self.area_foto.add_widget(self.img_preview)
 
+    # =========================
+    # SALDO / ENTRADA
+    # =========================
     def atualizar_saldo_ui(self, *args):
         if not bd or not bd.local_id:
             self.creditos_atuais = 0
@@ -541,6 +736,7 @@ class TelaPrincipal(Screen):
             self.btn_gerar.text = "GERAR (0)"
 
     def on_enter(self):
+        self.mostrar_barras_android()
         self.atualizar_saldo_ui()
         self.verificar_e_registrar_usuario()
         self.checar_termos_no_firebase()
@@ -603,6 +799,9 @@ class TelaPrincipal(Screen):
         except Exception as e:
             print(f"Erro verificar usuario: {e}")
 
+    # =========================
+    # CONEXÃO / UI
+    # =========================
     def checar_conexao_loop(self):
         while True:
             if not self.processando_agora:
@@ -668,6 +867,9 @@ class TelaPrincipal(Screen):
         else:
             self.label_s.text = "LOJA INDISPONÍVEL"
 
+    # =========================
+    # TERMOS
+    # =========================
     def salvar_aceite_firebase(self, *args):
         if not bd or not bd.local_id:
             if self.dialogo_termos:
