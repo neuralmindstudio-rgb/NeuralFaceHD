@@ -9,6 +9,7 @@ source.include_patterns = assets/*,images/*
 
 version = 1.3
 orientation = portrait
+fullscreen = 0
 
 # 🔥 REQUISITOS LIMPOS E ESTÁVEIS
 requirements = python3,kivy==2.3.0,kivymd==1.2.0,requests,urllib3,certifi,pyrebase4,pycryptodome,cryptography
