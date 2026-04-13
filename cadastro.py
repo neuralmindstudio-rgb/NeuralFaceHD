@@ -1,6 +1,8 @@
 import threading
 from datetime import datetime
 
+import requests
+
 from kivy.uix.screenmanager import Screen
 from kivy.uix.scrollview import ScrollView
 from kivy.uix.boxlayout import BoxLayout
@@ -207,11 +209,33 @@ class TelaCadastro(Screen):
         e_mail = self.email.text.strip().lower()
         pass_w = self.senha.text.strip()
         nome = self.nome.text.strip()
+        data_nascimento = self.data_nasc.text.strip()
 
         try:
             sucesso = bd.cadastro(e_mail, pass_w, nome)
 
             if sucesso:
+                # Complementa os dados do usuário recém-criado sem alterar o restante do banco
+                try:
+                    if bd.local_id:
+                        url = f"{bd.DATABASE_URL}/usuarios/{bd.local_id}.json"
+                        if getattr(bd, "id_token", None):
+                            url = f"{url}?auth={bd.id_token}"
+
+                        payload = {
+                            "nome": nome,
+                            "email": e_mail,
+                            "creditos": 5,
+                            "data_nascimento": data_nascimento,
+                            "data_cadastro": datetime.now().strftime("%d/%m/%Y %H:%M"),
+                            "aceitou_termos": False
+                        }
+
+                        res = requests.patch(url, json=payload, timeout=15)
+                        print("COMPLEMENTO CADASTRO:", res.text)
+                except Exception as e:
+                    print(f"Erro ao complementar cadastro: {e}")
+
                 Clock.schedule_once(lambda dt: self.sucesso_cadastro(), 0.1)
             else:
                 erro_real = getattr(bd, "ultimo_erro", "Erro no cadastro.")
@@ -244,4 +268,4 @@ class TelaCadastro(Screen):
     def falha_cadastro(self, erro):
         self.btn_registrar.text = "FINALIZAR E GANHAR 5 CRÉDITOS"
         self.btn_registrar.disabled = False
-        MDDialog(title="Erro", text=erro).open()      
+        MDDialog(title="Erro", text=erro).open()
