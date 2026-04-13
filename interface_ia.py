@@ -564,30 +564,44 @@ class TelaPrincipal(Screen):
         return False
 
     def verificar_e_registrar_usuario(self):
-        if not bd or not bd.local_id or not bd.current_user:
-            return
+    if not bd or not bd.local_id or not bd.current_user:
+        return
 
-        try:
-            url = f"{bd.DATABASE_URL}/usuarios/{bd.local_id}.json"
-            if bd.id_token:
-                url = f"{url}?auth={bd.id_token}"
+    try:
+        url = f"{bd.DATABASE_URL}/usuarios/{bd.local_id}.json"
+        if bd.id_token:
+            url = f"{url}?auth={bd.id_token}"
 
-            res = requests.get(url, timeout=10)
-            dados = res.json()
+        res = requests.get(url, timeout=10)
+        dados = res.json()
 
-            data_hoje = datetime.now().strftime("%d/%m/%Y %H:%M")
-            u_email = bd.current_user.get("email", "")
+        data_hoje = datetime.now().strftime("%d/%m/%Y %H:%M")
+        u_email = bd.current_user.get("email", "")
 
-            if not dados or "email" not in dados:
-                info = {
-                    "email": u_email,
-                    "data_cadastro": data_hoje,
-                    "creditos": dados.get("creditos", 0) if isinstance(dados, dict) else 0,
-                    "aceitou_termos": dados.get("aceitou_termos", False) if isinstance(dados, dict) else False
-                }
-                requests.patch(url, json=info, timeout=10)
-        except Exception as e:
-            print(f"Erro verificar usuario: {e}")
+        if not isinstance(dados, dict):
+            dados = {}
+
+        info = {
+            "email": dados.get("email", u_email),
+            "data_cadastro": dados.get("data_cadastro", data_hoje),
+            "creditos": dados.get("creditos", 5),
+            "aceitou_termos": dados.get("aceitou_termos", False),
+            "nome": dados.get("nome", ""),
+            "data_nascimento": dados.get("data_nascimento", "")
+        }
+
+        if (
+            "email" not in dados
+            or "data_cadastro" not in dados
+            or "creditos" not in dados
+            or "aceitou_termos" not in dados
+            or "nome" not in dados
+            or "data_nascimento" not in dados
+        ):
+            requests.patch(url, json=info, timeout=10)
+
+    except Exception as e:
+        print(f"Erro verificar usuario: {e}")
 
     def checar_conexao_loop(self):
         while True:
