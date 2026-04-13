@@ -521,9 +521,6 @@ class TelaPrincipal(Screen):
             self.label_s.text = "ARQUIVO NÃO ENCONTRADO"
             return
 
-        print("ANDROID_OK =", ANDROID_OK)
-        print("ARQUIVO SHARE =", self.arquivo_gerado_agora)
-
         if ANDROID_OK:
             try:
                 self.compartilhar_android(self.arquivo_gerado_agora)
@@ -547,13 +544,32 @@ class TelaPrincipal(Screen):
     def compartilhar_android(self, caminho_arquivo):
         PythonActivity = autoclass('org.kivy.android.PythonActivity')
         Intent = autoclass('android.content.Intent')
-        File = autoclass('java.io.File')
-        FileProvider = autoclass('androidx.core.content.FileProvider')
+        MediaStoreImagesMedia = autoclass('android.provider.MediaStore$Images$Media')
+        ContentValues = autoclass('android.content.ContentValues')
         currentActivity = PythonActivity.mActivity
+        resolver = currentActivity.getContentResolver()
 
-        arquivo = File(caminho_arquivo)
-        authority = currentActivity.getPackageName() + ".fileprovider"
-        uri = FileProvider.getUriForFile(currentActivity, authority, arquivo)
+        valores = ContentValues()
+        nome = f"NeuralFace_{int(time.time())}.jpg"
+        valores.put("_display_name", nome)
+        valores.put("mime_type", "image/jpeg")
+
+        try:
+            valores.put("relative_path", "Pictures/NeuralFaceHD")
+        except Exception:
+            pass
+
+        uri = resolver.insert(MediaStoreImagesMedia.EXTERNAL_CONTENT_URI, valores)
+        if uri is None:
+            raise Exception("Falha ao criar URI para compartilhamento")
+
+        pfd = resolver.openFileDescriptor(uri, "w")
+        if pfd is None:
+            raise Exception("Falha ao abrir destino de compartilhamento")
+
+        fd = pfd.detachFd()
+        with open(caminho_arquivo, "rb") as origem, os.fdopen(fd, "wb") as destino:
+            shutil.copyfileobj(origem, destino)
 
         intent = Intent(Intent.ACTION_SEND)
         intent.setType("image/jpeg")
