@@ -15,7 +15,7 @@ from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.screenmanager import Screen
 from kivy.uix.scrollview import ScrollView
 from kivy.cache import Cache
-from kivy.graphics import Color, Rectangle, RoundedRectangle
+from kivy.graphics import Color, RoundedRectangle
 from kivy.utils import get_color_from_hex
 from kivy.app import App
 from kivy.storage.jsonstore import JsonStore
@@ -68,7 +68,43 @@ class TelaPrincipal(Screen):
         self.path_base = ""
         self.path_rosto = ""
         self.imagem_final_pronta = False
-        self.servid
+        self.servidor_online = False
+        self.arquivo_gerado_agora = ""
+        self.ultima_combinacao = ""
+        self.dialogo_termos = None
+        self.dialogo_tutorial = None
+        self.dialogo_save_choice = None
+        self.dialogo_sem_creditos = None
+        self.file_manager_aberto = False
+        self.th = None
+        self.processando_agora = False
+        self.bloqueio_idx = False
+        self.tipo_atual = "base"
+
+        self.file_manager = MDFileManager(
+            exit_manager=self.fechar_seletor,
+            select_path=self.processar_selecao_kivymd,
+            preview=True,
+        )
+
+        layout_geral = FloatLayout()
+
+        self.barra_t = BoxLayout(
+            size_hint=(1, None),
+            height=dp(55),
+            spacing=dp(10),
+            padding=dp(10),
+            pos_hint={'top': 1}
+        )
+
+        self.btn_sair = MDRectangleFlatButton(
+            text="LOGOUT",
+            theme_text_color="Custom",
+            text_color=(1, 0, 0, 1),
+            line_color=(1, 0, 0, 1)
+        )
+        self.btn_sair.bind(on_release=self.fazer_logout)
+
         self.btn_salvar = MDRoundFlatIconButton(
             text="SALVAR",
             icon="download",
@@ -343,8 +379,8 @@ class TelaPrincipal(Screen):
                 self.label_s.text = "ERRO AO COMPARTILHAR"
 
     def enviar_ao_pc(self, instance):
-        if not auth or not db:
-            self.label_s.text = "FIREBASE INDISPONÍVEL"
+        if not bd or not bd.local_id:
+            self.label_s.text = "LOGIN NECESSÁRIO"
             return
 
         if self.creditos_atuais <= 0:
@@ -406,12 +442,8 @@ class TelaPrincipal(Screen):
             try:
                 tentativa_atual += 1
 
-                if not auth or not getattr(auth, "current_user", None):
+                if not bd or not bd.local_id:
                     raise Exception("Usuário não autenticado")
-
-                user_refreshed = auth.refresh(auth.current_user['refreshToken'])
-                u_id = user_refreshed['userId']
-                id_token = user_refreshed['idToken']
 
                 pasta_app = App.get_running_app().user_data_dir
                 nome_unico = os.path.join(pasta_app, "neural_result.jpg")
@@ -435,11 +467,9 @@ class TelaPrincipal(Screen):
 
                         if deve_cobrar:
                             try:
-                                db.child("usuarios").child(u_id).update(
-                                    {"creditos": self.creditos_atuais - 1},
-                                    id_token
-                                )
-                                self.ultima_combinacao = combinacao_atual
+                                ok = bd.atualizar_creditos(self.creditos_atuais - 1)
+                                if ok:
+                                    self.ultima_combinacao = combinacao_atual
                             except Exception:
                                 pass
 
@@ -497,21 +527,18 @@ class TelaPrincipal(Screen):
         self.area_foto.add_widget(self.img_preview)
 
     def atualizar_saldo_ui(self, *args):
-        if not auth or not db or not getattr(auth, "current_user", None):
+        if not bd or not bd.local_id:
             self.creditos_atuais = 0
             self.btn_gerar.text = "GERAR (0)"
             return
 
         try:
-            user_refreshed = auth.refresh(auth.current_user['refreshToken'])
-            u_id = user_refreshed['userId']
-            id_token = user_refreshed['idToken']
-            dados = db.child("usuarios").child(u_id).get(id_token).val()
-            if dados:
-                self.creditos_atuais = dados.get("creditos", 0)
-                self.btn_gerar.text = f"GERAR ({self.creditos_atuais})"
+            self.creditos_atuais = bd.pegar_creditos()
+            self.btn_gerar.text = f"GERAR ({self.creditos_atuais})"
         except Exception as e:
             print(f"Erro atualizar saldo: {e}")
+            self.creditos_atuais = 0
+            self.btn_gerar.text = "GERAR (0)"
 
     def on_enter(self):
         self.atualizar_saldo_ui()
@@ -537,26 +564,28 @@ class TelaPrincipal(Screen):
         return False
 
     def verificar_e_registrar_usuario(self):
-        if not auth or not db or not getattr(auth, "current_user", None):
+        if not bd or not bd.local_id or not bd.current_user:
             return
 
         try:
-            user_refreshed = auth.refresh(auth.current_user['refreshToken'])
-            u_id = user_refreshed['userId']
-            id_token = user_refreshed['idToken']
-            u_email = auth.current_user['email']
+            url = f"{bd.DATABASE_URL}/usuarios/{bd.local_id}.json"
+            if bd.id_token:
+                url = f"{url}?auth={bd.id_token}"
 
-            dados = db.child("usuarios").child(u_id).get(id_token).val()
+            res = requests.get(url, timeout=10)
+            dados = res.json()
+
             data_hoje = datetime.now().strftime("%d/%m/%Y %H:%M")
+            u_email = bd.current_user.get("email", "")
 
             if not dados or "email" not in dados:
                 info = {
                     "email": u_email,
                     "data_cadastro": data_hoje,
-                    "creditos": dados.get("creditos", 0) if dados else 0,
-                    "aceitou_termos": dados.get("aceitou_termos", False) if dados else False
+                    "creditos": dados.get("creditos", 0) if isinstance(dados, dict) else 0,
+                    "aceitou_termos": dados.get("aceitou_termos", False) if isinstance(dados, dict) else False
                 }
-                db.child("usuarios").child(u_id).update(info, id_token)
+                requests.patch(url, json=info, timeout=10)
         except Exception as e:
             print(f"Erro verificar usuario: {e}")
 
@@ -590,7 +619,16 @@ class TelaPrincipal(Screen):
         if self.imagem_final_pronta:
             instance.source = self.arquivo_gerado_agora
 
+    def desbloquear_idx(self, dt):
+        self.bloqueio_idx = False
+
     def alternar_rosto(self, instance):
+        if self.bloqueio_idx:
+            return
+
+        self.bloqueio_idx = True
+        Clock.schedule_once(self.desbloquear_idx, 0.2)
+
         self.face_index = (self.face_index + 1) if self.face_index < 5 else 0
         instance.text = f"TROCAR ROSTO ({self.face_index})"
 
@@ -604,23 +642,32 @@ class TelaPrincipal(Screen):
         self.ultima_combinacao = ""
 
     def fazer_logout(self, *args):
+        if bd:
+            bd.current_user = None
+            bd.id_token = None
+            bd.local_id = None
         self.manager.current = 'login'
 
     def abrir_loja(self, *args):
-        self.manager.current = 'loja'
+        if self.manager and self.manager.has_screen('loja'):
+            self.manager.current = 'loja'
+        else:
+            self.label_s.text = "LOJA INDISPONÍVEL"
 
     def salvar_aceite_firebase(self, *args):
-        if not auth or not db or not getattr(auth, "current_user", None):
+        if not bd or not bd.local_id:
             if self.dialogo_termos:
                 self.dialogo_termos.dismiss()
             return
 
         try:
-            user_refreshed = auth.refresh(auth.current_user['refreshToken'])
-            u_id = user_refreshed['userId']
-            id_token = user_refreshed['idToken']
-            db.child("usuarios").child(u_id).update({"aceitou_termos": True}, id_token)
-            self.dialogo_termos.dismiss()
+            url = f"{bd.DATABASE_URL}/usuarios/{bd.local_id}.json"
+            if bd.id_token:
+                url = f"{url}?auth={bd.id_token}"
+
+            requests.patch(url, json={"aceitou_termos": True}, timeout=10)
+            if self.dialogo_termos:
+                self.dialogo_termos.dismiss()
         except Exception:
             if self.dialogo_termos:
                 self.dialogo_termos.dismiss()
@@ -685,14 +732,16 @@ class TelaPrincipal(Screen):
         self.dialogo_termos.open()
 
     def checar_termos_no_firebase(self):
-        if not auth or not db or not getattr(auth, "current_user", None):
+        if not bd or not bd.local_id:
             return
 
         try:
-            user_refreshed = auth.refresh(auth.current_user['refreshToken'])
-            u_id = user_refreshed['userId']
-            id_token = user_refreshed['idToken']
-            dados = db.child("usuarios").child(u_id).get(id_token).val()
+            url = f"{bd.DATABASE_URL}/usuarios/{bd.local_id}.json"
+            if bd.id_token:
+                url = f"{url}?auth={bd.id_token}"
+
+            res = requests.get(url, timeout=10)
+            dados = res.json()
 
             if not dados or not dados.get("aceitou_termos", False):
                 Clock.schedule_once(lambda dt: self.exibir_termos_popup(), 0.5)
