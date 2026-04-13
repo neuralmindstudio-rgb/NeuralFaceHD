@@ -607,4 +607,157 @@ class TelaPrincipal(Screen):
         while True:
             if not self.processando_agora:
                 try:
-                    s = socket.socket(socket.AF_INET, socket.SOC
+                    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                    s.settimeout(2)
+                    s.connect((self.ip_servidor, 8080))
+                    s.close()
+                    Clock.schedule_once(lambda dt: self.atualizar_ui_servidor(True))
+                except Exception:
+                    Clock.schedule_once(lambda dt: self.atualizar_ui_servidor(False))
+            time.sleep(5)
+
+    def atualizar_ui_servidor(self, online):
+        self.servidor_online = online
+        self.lbl_rede.text = "ONLINE" if online else "OFFLINE"
+        self.lbl_rede.color = (0, 1, 0, 1) if online else (1, 0, 0, 1)
+
+    def update_rect_meio(self, instance, value):
+        self.rect_meio.pos = instance.pos
+        self.rect_meio.size = instance.size
+
+    def evento_pressionar_foto(self, instance, touch):
+        if instance.collide_point(*touch.pos) and self.imagem_final_pronta:
+            instance.source = self.path_base
+
+    def evento_soltar_foto(self, instance, touch):
+        if self.imagem_final_pronta:
+            instance.source = self.arquivo_gerado_agora
+
+    def desbloquear_idx(self, dt):
+        self.bloqueio_idx = False
+
+    def alternar_rosto(self, instance):
+        if self.bloqueio_idx:
+            return
+
+        self.bloqueio_idx = True
+        Clock.schedule_once(self.desbloquear_idx, 0.2)
+
+        self.face_index = (self.face_index + 1) if self.face_index < 5 else 0
+        instance.text = f"TROCAR ROSTO ({self.face_index})"
+
+    def limpar_tudo(self, *args):
+        self.area_foto.clear_widgets()
+        self.path_base = ""
+        self.path_rosto = ""
+        self.label_s.text = "Neural Face HD"
+        self.btn_salvar.disabled = True
+        self.btn_share.disabled = True
+        self.ultima_combinacao = ""
+
+    def fazer_logout(self, *args):
+        if bd:
+            bd.current_user = None
+            bd.id_token = None
+            bd.local_id = None
+        self.manager.current = 'login'
+
+    def abrir_loja(self, *args):
+        if self.manager and self.manager.has_screen('loja'):
+            self.manager.current = 'loja'
+        else:
+            self.label_s.text = "LOJA INDISPONÍVEL"
+
+    def salvar_aceite_firebase(self, *args):
+        if not bd or not bd.local_id:
+            if self.dialogo_termos:
+                self.dialogo_termos.dismiss()
+            return
+
+        try:
+            url = f"{bd.DATABASE_URL}/usuarios/{bd.local_id}.json"
+            if bd.id_token:
+                url = f"{url}?auth={bd.id_token}"
+
+            requests.patch(url, json={"aceitou_termos": True}, timeout=10)
+            if self.dialogo_termos:
+                self.dialogo_termos.dismiss()
+        except Exception:
+            if self.dialogo_termos:
+                self.dialogo_termos.dismiss()
+
+    def exibir_termos_popup(self):
+        texto = (
+            "[b]TERMOS DE USO E RESPONSABILIDADE LEGAL[/b]\n\n"
+            "Ao utilizar o [b]Neural Face HD[/b], você declara ser maior de 18 "
+            "anos e assume total responsabilidade civil e criminal pelo uso desta ferramenta, "
+            "declarando estar ciente de:\n\n"
+            "1. [b]PROTEÇÃO À CRIANÇA (ECA):[/b] É terminantemente proibida a manipulação de "
+            "imagens de menores de 18 anos. Violações estão sujeitas às penas da Lei 8.069/90 "
+            "e da Lei 14.811/2024 (ECA Digital).\n"
+            "2. [b]DIREITO DE IMAGEM:[/b] Você declara possuir autorização legal e consensual "
+            "de todas as pessoas cujas faces serão processadas.\n"
+            "3. [b]USO ILÍCITO:[/b] Proibida a criação de conteúdo pornográfico (Deepnude), "
+            "difamatório, político-eleitoral enganoso ou que promova ódio/violência.\n"
+            "4. [b]ISENÇÃO:[/b] O desenvolvedor fornece apenas a tecnologia. O usuário é o "
+            "único responsável pela destinação do conteúdo gerado.\n\n"
+            "O uso indevido resultará em banimento imediato e cooperação total com autoridades judiciais."
+        )
+
+        scroll = ScrollView(size_hint=(1, None), height=dp(380))
+        conteudo_texto = Label(
+            text=texto,
+            markup=True,
+            size_hint_y=None,
+            color=(1, 1, 1, 1),
+            font_size='14sp',
+            halign="left",
+            valign="top",
+            padding=(dp(10), dp(10))
+        )
+        conteudo_texto.bind(
+            width=lambda instance, value: setattr(instance, 'text_size', (value - dp(20), None))
+        )
+        conteudo_texto.bind(
+            texture_size=lambda instance, value: setattr(instance, 'height', value[1])
+        )
+        scroll.add_widget(conteudo_texto)
+
+        self.dialogo_termos = MDDialog(
+            title="CONSENTIMENTO JURÍDICO",
+            type="custom",
+            content_cls=scroll,
+            size_hint_x=0.9,
+            auto_dismiss=False,
+            buttons=[
+                MDRectangleFlatButton(
+                    text="RECUSAR",
+                    theme_text_color="Custom",
+                    text_color=(1, 0, 0, 1),
+                    line_color=(1, 0, 0, 1),
+                    on_release=lambda x: (self.dialogo_termos.dismiss(), self.fazer_logout())
+                ),
+                MDFillRoundFlatButton(
+                    text="EU ACEITO",
+                    on_release=self.salvar_aceite_firebase
+                )
+            ]
+        )
+        self.dialogo_termos.open()
+
+    def checar_termos_no_firebase(self):
+        if not bd or not bd.local_id:
+            return
+
+        try:
+            url = f"{bd.DATABASE_URL}/usuarios/{bd.local_id}.json"
+            if bd.id_token:
+                url = f"{url}?auth={bd.id_token}"
+
+            res = requests.get(url, timeout=10)
+            dados = res.json()
+
+            if not dados or not dados.get("aceitou_termos", False):
+                Clock.schedule_once(lambda dt: self.exibir_termos_popup(), 0.5)
+        except Exception as e:
+            print(f"Erro termos firebase: {e}")
