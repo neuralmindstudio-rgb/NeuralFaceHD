@@ -603,8 +603,10 @@ class TelaPrincipal(Screen):
     def compartilhar_android(self, caminho_arquivo):
         PythonActivity = autoclass('org.kivy.android.PythonActivity')
         Intent = autoclass('android.content.Intent')
+        ClipData = autoclass('android.content.ClipData')
         MediaStoreImagesMedia = autoclass('android.provider.MediaStore$Images$Media')
         ContentValues = autoclass('android.content.ContentValues')
+
         currentActivity = PythonActivity.mActivity
         resolver = currentActivity.getContentResolver()
 
@@ -622,18 +624,25 @@ class TelaPrincipal(Screen):
         if uri is None:
             raise Exception("Falha ao criar URI para compartilhamento")
 
-        pfd = resolver.openFileDescriptor(uri, "w")
-        if pfd is None:
-            raise Exception("Falha ao abrir destino de compartilhamento")
+        out_stream = resolver.openOutputStream(uri)
+        if out_stream is None:
+            raise Exception("Falha ao abrir stream de saída para compartilhamento")
 
-        fd = pfd.detachFd()
-        with open(caminho_arquivo, "rb") as origem, os.fdopen(fd, "wb") as destino:
-            shutil.copyfileobj(origem, destino)
+        with open(caminho_arquivo, "rb") as origem:
+            while True:
+                chunk = origem.read(8192)
+                if not chunk:
+                    break
+                out_stream.write(chunk)
+
+        out_stream.flush()
+        out_stream.close()
 
         intent = Intent(Intent.ACTION_SEND)
         intent.setType("image/jpeg")
-        intent.putExtra(Intent.EXTRA_STREAM, cast('android.os.Parcelable', uri))
+        intent.putExtra(Intent.EXTRA_STREAM, uri)
         intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        intent.setClipData(ClipData.newUri(resolver, "Neural Face HD", uri))
 
         chooser = Intent.createChooser(intent, "Compartilhar imagem")
         currentActivity.startActivity(chooser)
