@@ -1,6 +1,5 @@
 import threading
 from datetime import datetime
-
 import requests
 
 from kivy.uix.screenmanager import Screen
@@ -206,44 +205,35 @@ class TelaCadastro(Screen):
         threading.Thread(target=self.processar_firebase, daemon=True).start()
 
     def processar_firebase(self):
-        e_mail = self.email.text.strip().lower()
-        pass_w = self.senha.text.strip()
-        nome = self.nome.text.strip()
-        data_nascimento = self.data_nasc.text.strip()
+        email_u = self.email.text.strip().lower()
+        senha_u = self.senha.text.strip()
+        nome_u = self.nome.text.strip()
+        data_nasc_u = self.data_nasc.text.strip()
 
         try:
-            sucesso = bd.cadastro(e_mail, pass_w, nome)
+            user = bd.auth.create_user_with_email_and_password(email_u, senha_u)
+            u_id = user["localId"]
 
-            if sucesso:
-                # Complementa os dados do usuário recém-criado sem alterar o restante do banco
-                try:
-                    if bd.local_id:
-                        url = f"{bd.DATABASE_URL}/usuarios/{bd.local_id}.json"
-                        if getattr(bd, "id_token", None):
-                            url = f"{url}?auth={bd.id_token}"
+            login_data = bd.auth.sign_in_with_email_and_password(email_u, senha_u)
+            id_token = login_data["idToken"]
 
-                        payload = {
-                            "nome": nome,
-                            "email": e_mail,
-                            "creditos": 5,
-                            "data_nascimento": data_nascimento,
-                            "data_cadastro": datetime.now().strftime("%d/%m/%Y %H:%M"),
-                            "aceitou_termos": False
-                        }
+            bd.db.child("usuarios").child(u_id).set({
+                "nome": nome_u,
+                "email": email_u,
+                "data_nascimento": data_nasc_u,
+                "data_cadastro": datetime.now().strftime("%d/%m/%Y %H:%M"),
+                "creditos": 5,
+                "aceitou_termos": False,
+                "bonus_primeiro_cadastro": True
+            }, id_token)
 
-                        res = requests.patch(url, json=payload, timeout=15)
-                        print("COMPLEMENTO CADASTRO:", res.text)
-                except Exception as e:
-                    print(f"Erro ao complementar cadastro: {e}")
-
-                Clock.schedule_once(lambda dt: self.sucesso_cadastro(), 0.1)
-            else:
-                erro_real = getattr(bd, "ultimo_erro", "Erro no cadastro.")
-                Clock.schedule_once(lambda dt: self.falha_cadastro(erro_real), 0.1)
+            print("CADASTRO COMPLETO OK:", u_id)
+            Clock.schedule_once(lambda dt: self.sucesso_cadastro(), 0.1)
 
         except Exception as e:
-            print(f"Erro cadastro: {e}")
-            Clock.schedule_once(lambda dt: self.falha_cadastro(str(e)), 0.1)
+            print(f"Erro cadastro completo: {e}")
+            erro_real = getattr(bd, "ultimo_erro", str(e))
+            Clock.schedule_once(lambda dt: self.falha_cadastro(erro_real), 0.1)
 
     def sucesso_cadastro(self):
         self.btn_registrar.text = "FINALIZAR E GANHAR 5 CRÉDITOS"
