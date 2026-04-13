@@ -43,15 +43,21 @@ except ImportError:
 # Android nativo
 try:
     from jnius import autoclass, cast
-    from android import activity
-    from android.runnable import run_on_ui_thread
     ANDROID_OK = True
 except Exception:
     autoclass = None
     cast = None
-    activity = None
-    run_on_ui_thread = None
     ANDROID_OK = False
+
+try:
+    from android import activity
+except Exception:
+    activity = None
+
+try:
+    from android.runnable import run_on_ui_thread
+except Exception:
+    run_on_ui_thread = None
 
 # 🔥 BANCO VIA REST
 try:
@@ -102,7 +108,7 @@ class TelaPrincipal(Screen):
             preview=True,
         )
 
-        if ANDROID_OK:
+        if ANDROID_OK and activity:
             try:
                 activity.bind(on_activity_result=self.on_activity_result)
             except Exception as e:
@@ -290,7 +296,7 @@ class TelaPrincipal(Screen):
     # =========================
     # ANDROID SYSTEM BARS
     # =========================
-    def mostrar_barras_android(self):
+    def mostrar_barras_android(self, *args):
         if not ANDROID_OK:
             return
 
@@ -300,7 +306,6 @@ class TelaPrincipal(Screen):
             LayoutParams = autoclass('android.view.WindowManager$LayoutParams')
             currentActivity = PythonActivity.mActivity
 
-            @run_on_ui_thread
             def _mostrar():
                 try:
                     window = currentActivity.getWindow()
@@ -310,7 +315,11 @@ class TelaPrincipal(Screen):
                 except Exception as e:
                     print(f"Erro mostrar barras Android: {e}")
 
-            _mostrar()
+            if run_on_ui_thread:
+                run_on_ui_thread(_mostrar)()
+            else:
+                _mostrar()
+
         except Exception as e:
             print(f"Erro preparar barras Android: {e}")
 
@@ -343,7 +352,6 @@ class TelaPrincipal(Screen):
             except Exception as e:
                 print(f"Erro seletor Android nativo: {e}")
 
-        # fallback fora do Android
         if filechooser:
             try:
                 filechooser.open_file(on_selection=self.processar_selecao_nativa)
@@ -394,11 +402,12 @@ class TelaPrincipal(Screen):
             resolver = currentActivity.getContentResolver()
 
             try:
+                Intent = autoclass('android.content.Intent')
                 flags = (
-                    autoclass('android.content.Intent').FLAG_GRANT_READ_URI_PERMISSION |
-                    autoclass('android.content.Intent').FLAG_GRANT_PERSISTABLE_URI_PERMISSION
+                    Intent.FLAG_GRANT_READ_URI_PERMISSION |
+                    Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION
                 )
-                currentActivity.getContentResolver().takePersistableUriPermission(uri, flags)
+                resolver.takePersistableUriPermission(uri, flags)
             except Exception:
                 pass
 
@@ -512,52 +521,39 @@ class TelaPrincipal(Screen):
             self.label_s.text = "ARQUIVO NÃO ENCONTRADO"
             return
 
-        # Android nativo
+        print("ANDROID_OK =", ANDROID_OK)
+        print("ARQUIVO SHARE =", self.arquivo_gerado_agora)
+
         if ANDROID_OK:
             try:
                 self.compartilhar_android(self.arquivo_gerado_agora)
                 return
             except Exception as e:
                 print(f"Erro compartilhar Android: {e}")
+                self.label_s.text = "ERRO AO COMPARTILHAR"
+                return
 
-        # fallback
         if share:
             try:
                 share.share(filepath=self.arquivo_gerado_agora)
-            except Exception:
+                return
+            except Exception as e:
+                print(f"Erro share plyer: {e}")
                 self.label_s.text = "ERRO AO COMPARTILHAR"
-        else:
-            self.label_s.text = "COMPARTILHAMENTO INDISPONÍVEL"
+                return
+
+        self.label_s.text = "COMPARTILHAMENTO INDISPONÍVEL"
 
     def compartilhar_android(self, caminho_arquivo):
         PythonActivity = autoclass('org.kivy.android.PythonActivity')
         Intent = autoclass('android.content.Intent')
-        MediaStoreImagesMedia = autoclass('android.provider.MediaStore$Images$Media')
-        ContentValues = autoclass('android.content.ContentValues')
+        File = autoclass('java.io.File')
+        FileProvider = autoclass('androidx.core.content.FileProvider')
         currentActivity = PythonActivity.mActivity
-        resolver = currentActivity.getContentResolver()
 
-        valores = ContentValues()
-        nome = f"NeuralFace_{int(time.time())}.jpg"
-        valores.put("_display_name", nome)
-        valores.put("mime_type", "image/jpeg")
-
-        try:
-            valores.put("relative_path", "Pictures/NeuralFaceHD")
-        except Exception:
-            pass
-
-        uri = resolver.insert(MediaStoreImagesMedia.EXTERNAL_CONTENT_URI, valores)
-        if uri is None:
-            raise Exception("Falha ao criar URI para compartilhamento")
-
-        pfd = resolver.openFileDescriptor(uri, "w")
-        if pfd is None:
-            raise Exception("Falha ao abrir destino de compartilhamento")
-
-        fd = pfd.detachFd()
-        with open(caminho_arquivo, "rb") as origem, os.fdopen(fd, "wb") as destino:
-            shutil.copyfileobj(origem, destino)
+        arquivo = File(caminho_arquivo)
+        authority = currentActivity.getPackageName() + ".fileprovider"
+        uri = FileProvider.getUriForFile(currentActivity, authority, arquivo)
 
         intent = Intent(Intent.ACTION_SEND)
         intent.setType("image/jpeg")
@@ -737,6 +733,10 @@ class TelaPrincipal(Screen):
 
     def on_enter(self):
         self.mostrar_barras_android()
+        Clock.schedule_once(self.mostrar_barras_android, 0.2)
+        Clock.schedule_once(self.mostrar_barras_android, 0.6)
+        Clock.schedule_once(self.mostrar_barras_android, 1.0)
+
         self.atualizar_saldo_ui()
         self.verificar_e_registrar_usuario()
         self.checar_termos_no_firebase()
