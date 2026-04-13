@@ -72,6 +72,7 @@ tutorial_store = JsonStore('tutorial_status.json')
 
 class TelaPrincipal(Screen):
     PICK_IMAGE_REQUEST = 1001
+    CREATE_FILE_REQUEST = 1002
 
     def __init__(self, **kw):
         super().__init__(**kw)
@@ -347,12 +348,15 @@ class TelaPrincipal(Screen):
 
         if ANDROID_OK:
             try:
-                self.abrir_seletor_android()
+                if tipo == "salvar":
+                    self.abrir_salvar_android()
+                else:
+                    self.abrir_seletor_android()
                 return
             except Exception as e:
                 print(f"Erro seletor Android nativo: {e}")
 
-        if filechooser:
+        if filechooser and tipo != "salvar":
             try:
                 filechooser.open_file(on_selection=self.processar_selecao_nativa)
             except Exception:
@@ -373,10 +377,21 @@ class TelaPrincipal(Screen):
 
         currentActivity.startActivityForResult(intent, self.PICK_IMAGE_REQUEST)
 
-    def on_activity_result(self, request_code, result_code, intent):
-        if request_code != self.PICK_IMAGE_REQUEST:
-            return
+    def abrir_salvar_android(self):
+        PythonActivity = autoclass('org.kivy.android.PythonActivity')
+        Intent = autoclass('android.content.Intent')
+        currentActivity = PythonActivity.mActivity
 
+        nome = f"NeuralFace_{time.strftime('%Y%m%d_%H%M%S')}.jpg"
+
+        intent = Intent(Intent.ACTION_CREATE_DOCUMENT)
+        intent.addCategory(Intent.CATEGORY_OPENABLE)
+        intent.setType("image/jpeg")
+        intent.putExtra(Intent.EXTRA_TITLE, nome)
+
+        currentActivity.startActivityForResult(intent, self.CREATE_FILE_REQUEST)
+
+    def on_activity_result(self, request_code, result_code, intent):
         if not ANDROID_OK:
             return
 
@@ -385,13 +400,25 @@ class TelaPrincipal(Screen):
             if result_code != Activity.RESULT_OK or intent is None:
                 return
 
-            uri = intent.getData()
-            if uri is None:
+            if request_code == self.PICK_IMAGE_REQUEST:
+                uri = intent.getData()
+                if uri is None:
+                    return
+
+                caminho_local = self.copiar_uri_para_arquivo(uri)
+                if caminho_local:
+                    Clock.schedule_once(lambda dt: self.select_path(caminho_local))
                 return
 
-            caminho_local = self.copiar_uri_para_arquivo(uri)
-            if caminho_local:
-                Clock.schedule_once(lambda dt: self.select_path(caminho_local))
+            if request_code == self.CREATE_FILE_REQUEST:
+                uri = intent.getData()
+                if uri is None:
+                    return
+
+                ok = self.salvar_em_uri(uri)
+                self.label_s.text = "SALVO COM SUCESSO!" if ok else "ERRO AO GRAVAR ARQUIVO"
+                return
+
         except Exception as e:
             print(f"Erro on_activity_result: {e}")
 
@@ -430,6 +457,37 @@ class TelaPrincipal(Screen):
             print(f"Erro copiar URI para arquivo: {e}")
             return ""
 
+    def salvar_em_uri(self, uri):
+        try:
+            if not self.arquivo_gerado_agora or not os.path.exists(self.arquivo_gerado_agora):
+                return False
+
+            PythonActivity = autoclass('org.kivy.android.PythonActivity')
+            currentActivity = PythonActivity.mActivity
+            resolver = currentActivity.getContentResolver()
+
+            stream = resolver.openOutputStream(uri)
+            if stream is None:
+                return False
+
+            FileInputStream = autoclass('java.io.FileInputStream')
+            fis = FileInputStream(self.arquivo_gerado_agora)
+
+            buffer = bytearray(8192)
+            while True:
+                lidos = fis.read(buffer)
+                if lidos == -1:
+                    break
+                stream.write(buffer, 0, lidos)
+
+            stream.flush()
+            stream.close()
+            fis.close()
+            return True
+        except Exception as e:
+            print(f"Erro salvar_em_uri: {e}")
+            return False
+
     def abrir_fallback_filemanager(self):
         self.file_manager_aberto = True
         path = "/storage/emulated/0/" if os.path.exists("/storage/emulated/0/") else os.path.expanduser("~")
@@ -447,22 +505,14 @@ class TelaPrincipal(Screen):
         self.select_path(path)
 
     def fechar_seletor(self, *args):
-        self.file_manager.close()
+        try:
+            self.file_manager.close()
+        except Exception:
+            pass
         self.file_manager_aberto = False
 
     def select_path(self, path):
         if not os.path.exists(path):
-            return
-
-        if self.tipo_atual == "salvar":
-            try:
-                folder = path if os.path.isdir(path) else os.path.dirname(path)
-                ts = time.strftime("%Y%m%d_%H%M%S")
-                destino = os.path.join(folder, f"NeuralFace_{ts}.jpg")
-                shutil.copyfile(self.arquivo_gerado_agora, destino)
-                self.label_s.text = "SALVO COM SUCESSO!"
-            except Exception:
-                self.label_s.text = "ERRO AO GRAVAR ARQUIVO"
             return
 
         if self.tipo_atual == "base":
@@ -509,7 +559,16 @@ class TelaPrincipal(Screen):
     def salvar_escolhendo_pasta(self, instance):
         if self.dialogo_save_choice:
             self.dialogo_save_choice.dismiss()
+
         self.tipo_atual = "salvar"
+
+        if ANDROID_OK:
+            try:
+                self.abrir_salvar_android()
+                return
+            except Exception as e:
+                print(f"Erro salvar Android nativo: {e}")
+
         self.file_manager_aberto = True
         self.file_manager.show("/storage/emulated/0")
 
