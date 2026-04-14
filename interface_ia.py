@@ -459,34 +459,37 @@ class TelaPrincipal(Screen):
             return ""
 
     def salvar_em_uri(self, uri):
-        try:
-            if not self.arquivo_gerado_agora or not os.path.exists(self.arquivo_gerado_agora):
-                print("Erro salvar_em_uri: arquivo não encontrado")
-                return False
-
-            PythonActivity = autoclass('org.kivy.android.PythonActivity')
-            currentActivity = PythonActivity.mActivity
-            resolver = currentActivity.getContentResolver()
-
-            stream = resolver.openOutputStream(uri, "w")
-            if stream is None:
-                print("Erro salvar_em_uri: stream None")
-                return False
-
-            with open(self.arquivo_gerado_agora, "rb") as origem:
-                while True:
-                    chunk = origem.read(8192)
-                    if not chunk:
-                        break
-                    stream.write(chunk)
-
-            stream.flush()
-            stream.close()
-            return True
-
-        except Exception as e:
-            print(f"Erro salvar_em_uri: {e}")
+    try:
+        if not self.arquivo_gerado_agora or not os.path.exists(self.arquivo_gerado_agora):
+            print("Erro salvar_em_uri: arquivo não encontrado")
             return False
+
+        PythonActivity = autoclass('org.kivy.android.PythonActivity')
+        currentActivity = PythonActivity.mActivity
+        resolver = currentActivity.getContentResolver()
+
+        # 🔥 IMPORTANTE: modo "w" resolve erro de salvamento
+        stream = resolver.openOutputStream(uri, "w")
+        if stream is None:
+            print("Erro salvar_em_uri: stream None")
+            return False
+
+        with open(self.arquivo_gerado_agora, "rb") as origem:
+            while True:
+                chunk = origem.read(8192)
+                if not chunk:
+                    break
+                stream.write(chunk)
+
+        stream.flush()
+        stream.close()
+
+        print("Arquivo salvo com sucesso")
+        return True
+
+    except Exception as e:
+        print(f"Erro salvar_em_uri: {e}")
+        return False
 
     def abrir_fallback_filemanager(self):
         self.file_manager_aberto = True
