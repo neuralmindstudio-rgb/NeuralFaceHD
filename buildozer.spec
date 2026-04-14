@@ -9,6 +9,7 @@ source.include_patterns = assets/*,images/*
 
 version = 1.3
 orientation = portrait
+
 fullscreen = 0
 
 # 🔥 REQUISITOS LIMPOS E ESTÁVEIS
@@ -31,9 +32,6 @@ android.archs = arm64-v8a
 
 # 🔧 Bootstrap correto
 p4a.bootstrap = sdl2
-
-# ❌ NÃO usar entrypoint (quebrava o build)
-# android.entrypoint = main.py
 
 android.copy_libs = 1
 
