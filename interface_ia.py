@@ -729,7 +729,7 @@ class TelaPrincipal(Screen):
                         self.url_swap,
                         files={'foto_base': fb, 'foto_rosto': fr},
                         data=payload,
-                        timeout=45
+                        timeout=20
                     )
 
                     if res.status_code == 200:
