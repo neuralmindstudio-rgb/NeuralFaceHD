@@ -140,13 +140,14 @@ class TelaPrincipal(Screen):
         )
         self.btn_salvar.bind(on_release=self.abrir_menu_salvamento)
 
-        self.btn_share = MDIconButton(
-            icon="share-variant",
-            theme_text_color="Custom",
-            text_color=(1, 1, 1, 1),
-            disabled=True
-        )
-        self.btn_share.bind(on_release=self.compartilhar_resultado)
+        # 🔴 COMPARTILHAR DESATIVADO TEMPORARIAMENTE
+        # self.btn_share = MDIconButton(
+        #     icon="share-variant",
+        #     theme_text_color="Custom",
+        #     text_color=(1, 1, 1, 1),
+        #     disabled=True
+        # )
+        # self.btn_share.bind(on_release=self.compartilhar_resultado)
 
         self.lbl_rede = Label(
             text="OFFLINE",
@@ -164,7 +165,7 @@ class TelaPrincipal(Screen):
 
         self.barra_t.add_widget(self.btn_sair)
         self.barra_t.add_widget(self.btn_salvar)
-        self.barra_t.add_widget(self.btn_share)
+        # self.barra_t.add_widget(self.btn_share)
         self.barra_t.add_widget(self.lbl_rede)
         self.barra_t.add_widget(self.btn_mais)
 
@@ -541,14 +542,18 @@ class TelaPrincipal(Screen):
             size_hint_x=1,
             on_release=self.salvar_escolhendo_pasta
         )
-        btn2 = MDFillRoundFlatButton(
-            text="COMPARTILHAR",
-            md_bg_color=(0.3, 0.3, 0.8, 1),
-            size_hint_x=1,
-            on_release=self.compartilhar_resultado
-        )
+
+        # 🔴 COMPARTILHAR DESATIVADO TEMPORARIAMENTE
+        # btn2 = MDFillRoundFlatButton(
+        #     text="COMPARTILHAR",
+        #     md_bg_color=(0.3, 0.3, 0.8, 1),
+        #     size_hint_x=1,
+        #     on_release=self.compartilhar_resultado
+        # )
+
         content.add_widget(btn1)
-        content.add_widget(btn2)
+        # content.add_widget(btn2)
+
         self.dialogo_save_choice = MDDialog(
             title="Imagem Pronta!",
             type="custom",
@@ -729,7 +734,7 @@ class TelaPrincipal(Screen):
                         self.url_swap,
                         files={'foto_base': fb, 'foto_rosto': fr},
                         data=payload,
-                        timeout=20
+                        timeout=15
                     )
 
                     if res.status_code == 200:
@@ -766,7 +771,7 @@ class TelaPrincipal(Screen):
         self.imagem_final_pronta = True
         self.recriar_widget_imagem(self.arquivo_gerado_agora)
         self.btn_salvar.disabled = False
-        self.btn_share.disabled = False
+        # self.btn_share.disabled = False
         self.label_s.text = "CONCLUÍDO!"
         self.parar_barra()
         self.atualizar_saldo_ui()
@@ -935,7 +940,7 @@ class TelaPrincipal(Screen):
         self.path_rosto = ""
         self.label_s.text = "Neural Face HD"
         self.btn_salvar.disabled = True
-        self.btn_share.disabled = True
+        # self.btn_share.disabled = True
         self.ultima_combinacao = ""
 
     def fazer_logout(self, *args):
