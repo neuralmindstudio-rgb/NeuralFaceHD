@@ -459,35 +459,34 @@ class TelaPrincipal(Screen):
             return ""
 
     def salvar_em_uri(self, uri):
-        try:
-            if not self.arquivo_gerado_agora or not os.path.exists(self.arquivo_gerado_agora):
-                return False
-
-            PythonActivity = autoclass('org.kivy.android.PythonActivity')
-            currentActivity = PythonActivity.mActivity
-            resolver = currentActivity.getContentResolver()
-
-            stream = resolver.openOutputStream(uri)
-            if stream is None:
-                return False
-
-            FileInputStream = autoclass('java.io.FileInputStream')
-            fis = FileInputStream(self.arquivo_gerado_agora)
-
-            buffer = bytearray(8192)
-            while True:
-                lidos = fis.read(buffer)
-                if lidos == -1:
-                    break
-                stream.write(buffer, 0, lidos)
-
-            stream.flush()
-            stream.close()
-            fis.close()
-            return True
-        except Exception as e:
-            print(f"Erro salvar_em_uri: {e}")
+    try:
+        if not self.arquivo_gerado_agora or not os.path.exists(self.arquivo_gerado_agora):
+            print("Erro salvar_em_uri: arquivo não encontrado")
             return False
+
+        PythonActivity = autoclass('org.kivy.android.PythonActivity')
+        currentActivity = PythonActivity.mActivity
+        resolver = currentActivity.getContentResolver()
+
+        stream = resolver.openOutputStream(uri, "w")
+        if stream is None:
+            print("Erro salvar_em_uri: stream None")
+            return False
+
+        with open(self.arquivo_gerado_agora, "rb") as origem:
+            while True:
+                chunk = origem.read(8192)
+                if not chunk:
+                    break
+                stream.write(chunk)
+
+        stream.flush()
+        stream.close()
+        return True
+
+    except Exception as e:
+        print(f"Erro salvar_em_uri: {e}")
+        return False
 
     def abrir_fallback_filemanager(self):
         self.file_manager_aberto = True
