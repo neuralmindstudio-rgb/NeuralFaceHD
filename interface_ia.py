@@ -357,7 +357,11 @@ class TelaPrincipal(Screen):
         PythonActivity = autoclass('org.kivy.android.PythonActivity')
         Intent = autoclass('android.content.Intent')
         currentActivity = PythonActivity.mActivity
-        nome = "NeuralFaceHD_" + time.strftime("%Y%m%d_%H%M%S") + ".jpg"
+        
+        # 🔥 CORREÇÃO: Nome limpo e sem caracteres que o Android invalida
+        timestamp = time.strftime("%Y%m%d_%H%M%S")
+        nome = f"NFHD_{timestamp}.jpg"
+
         intent = Intent(Intent.ACTION_CREATE_DOCUMENT)
         intent.addCategory(Intent.CATEGORY_OPENABLE)
         intent.setType("image/jpeg")
