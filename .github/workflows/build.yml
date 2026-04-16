@@ -47,11 +47,11 @@ jobs:
         run: |
           # Limpa resíduos para garantir que a nova assinatura seja aplicada
           buildozer android clean
-          # Comando 'release' simples com o caminho do SDK do GitHub forçado
+          # Roda o release simples: ele vai ler as senhas do seu buildozer.spec
           yes | buildozer -v android release
         env:
           APP_ANDROID_KEYSTORE: neuralface.keystore
-          # Forçamos o Buildozer a usar o SDK que já existe no servidor do GitHub
+          # 🔥 APONTANDO PARA O SDK OFICIAL DO GITHUB (ONDE A API 34 ESTÁ)
           ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
           ANDROID_HOME: /usr/local/lib/android/sdk
 
