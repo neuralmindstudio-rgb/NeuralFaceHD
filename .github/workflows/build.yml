@@ -47,12 +47,13 @@ jobs:
 
       - name: Build with Buildozer
         run: |
-          # CORREÇÃO: Comando único 'release' para garantir que ele use a KEYSTORE
+          # Limpa resíduos para garantir que a nova assinatura seja aplicada
+          buildozer android clean
+          # Comando 'release' simples: ele vai ler as senhas do seu buildozer.spec
           yes | buildozer -v android release
         env:
+          # Mantemos apenas a referência do arquivo, as senhas ele pega do .spec
           APP_ANDROID_KEYSTORE: neuralface.keystore
-          APP_ANDROID_KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
-          APP_ANDROID_KEYALIAS_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
 
       - name: Upload Artifact
         # O "always()" garante que o download apareça mesmo se o buildozer der aviso de erro no fim
@@ -60,5 +61,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: NeuralFaceHD-Arquivos-Finais
-          # Pega tudo na pasta bin para garantir que o APK assinado venha junto
+          # Pega a pasta bin inteira
           path: bin/
