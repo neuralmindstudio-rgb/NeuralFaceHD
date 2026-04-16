@@ -56,6 +56,8 @@ jobs:
           APP_ANDROID_KEYALIAS_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
 
       - name: Upload Artifact
+        # O "always()" garante que o download apareça mesmo se o buildozer der aviso de erro no fim
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: NeuralFaceHD-Arquivos-Finais
