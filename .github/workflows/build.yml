@@ -36,14 +36,14 @@ jobs:
           path: .buildozer
           key: ${{ runner.os }}-buildozer-${{ hashFiles('buildozer.spec') }}
 
-      # DEPENDÊNCIAS: Mantido exatamente como no seu código
+      # DEPENDÊNCIAS: Atualizado com 'appdirs' para evitar o erro de ModuleNotFound
       - name: Install dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y libunwind-dev build-essential libffi-dev python3-dev ffmpeg libsdl2-dev libsdl2-image-dev libsdl2-mixer-dev libsdl2-ttf-dev libportmidi-dev libswscale-dev libavformat-dev libavcodec-dev zlib1g-dev
           sudo apt-get install -y libgstreamer1.0-dev gstreamer1.0-plugins-base gstreamer1.0-plugins-good gstreamer1.0-plugins-bad gstreamer1.0-plugins-ugly autoconf automake libtool pkg-config cmake
           pip install --upgrade pip
-          pip install buildozer cython==0.29.33 setuptools
+          pip install buildozer cython==0.29.33 setuptools appdirs
 
       - name: Build with Buildozer
         run: |
@@ -52,14 +52,12 @@ jobs:
           # Comando 'release' simples: ele vai ler as senhas do seu buildozer.spec
           yes | buildozer -v android release
         env:
-          # Mantemos apenas a referência do arquivo, as senhas ele pega do .spec
           APP_ANDROID_KEYSTORE: neuralface.keystore
 
       - name: Upload Artifact
-        # O "always()" garante que o download apareça mesmo se o buildozer der aviso de erro no fim
+        # O "always()" garante que o download apareça mesmo se houver avisos no final
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: NeuralFaceHD-Arquivos-Finais
-          # Pega a pasta bin inteira
           path: bin/
