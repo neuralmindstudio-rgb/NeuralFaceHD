@@ -1,58 +1,151 @@
 import os
-# Configuração para evitar flashes brancos e problemas de GPU
-os.environ['KIVY_VIDEO'] = 'ffpyplayer'
+# Bloqueia qualquer tentativa de usar ffpyplayer ou vídeo que derrube o app
+os.environ['KIVY_VIDEO'] = ''
+
+from kivy.config import Config
+
+# Desativa o multitouch só no PC, não no Android
+if os.name != 'posix':
+    Config.set('input', 'mouse', 'mouse,disable_multitouch')
 
 from kivy.core.window import Window
-# Garante o fundo preto antes de tudo carregar
+# Fundo preto imediato para evitar o clarão branco no Splash
 Window.clearcolor = (0, 0, 0, 1)
 
 from kivymd.app import MDApp
 from kivy.uix.screenmanager import ScreenManager
 from kivy.clock import Clock
+import traceback
 
-# --- IMPORTAÇÃO DOS SEUS ARQUIVOS SEPARADOS ---
-import login         # Agora busca no seu login.py centralizado
-import cadastro      # Agora busca no seu cadastro.py (o backup bom)
-import interface_ia  # Sua tela principal
-import splash        # Sua tela de abertura
-import loja          # Sua loja Neon
+# --- IMPORTAÇÃO DOS MÓDULOS ---
+try:
+    import splash
+    print("splash OK")
+except Exception as e:
+    print(f"Erro splash: {e}")
+    traceback.print_exc()
+
+try:
+    import login
+    print("login OK")
+except Exception as e:
+    print(f"Erro login: {e}")
+    traceback.print_exc()
+
+try:
+    import cadastro
+    print("cadastro OK")
+except Exception as e:
+    print(f"Erro cadastro: {e}")
+    traceback.print_exc()
+
+try:
+    import interface_ia
+    print("interface_ia OK")
+except Exception as e:
+    print(f"Erro interface_ia: {e}")
+    traceback.print_exc()
+
+try:
+    import loja
+    print("loja OK")
+except Exception as e:
+    print(f"Erro loja: {e}")
+    traceback.print_exc()
+
 
 class NeuralApp(MDApp):
     def build(self):
-        # Configuração do tema visual
+        # Configuração visual profissional
         self.theme_cls.theme_style = "Dark"
-        self.theme_cls.primary_palette = "Purple"
-        
-        sm = ScreenManager()
-        
-        # --- ADICIONANDO AS TELAS ---
-        
-        # 1. Splash Screen
-        sm.add_widget(splash.TelaSplash(name='splash'))
-        
-        # 2. Tela de Login (Puxando do arquivo login.py)
-        sm.add_widget(login.TelaLogin(name='login'))
-        
-        # 3. Tela de Cadastro (Puxando do arquivo cadastro.py)
-        sm.add_widget(cadastro.TelaCadastro(name='registro'))
-        
-        # 4. Interface Principal (IA)
-        sm.add_widget(interface_ia.TelaPrincipal(name='principal'))
-        
-        # 5. Loja de Créditos
-        sm.add_widget(loja.TelaLoja(name='loja'))
-        
-        # Inicia pela Splash
-        sm.current = 'splash'
-        return sm
+        self.theme_cls.primary_palette = "DeepPurple"
+        self.theme_cls.accent_palette = "Amber"
+
+        self.sm = ScreenManager()
+
+        try:
+            # Splash
+            try:
+                self.sm.add_widget(splash.TelaSplash(name='splash'))
+                print("Tela splash OK")
+                print("Screens atuais:", self.sm.screen_names)
+            except Exception as e:
+                print(f"Erro tela splash: {e}")
+                traceback.print_exc()
+
+            # Login
+            try:
+                self.sm.add_widget(login.TelaLogin(name='login'))
+                print("Tela login OK")
+                print("Screens atuais:", self.sm.screen_names)
+            except Exception as e:
+                print(f"Erro tela login: {e}")
+                traceback.print_exc()
+
+            # Cadastro
+            try:
+                self.sm.add_widget(cadastro.TelaCadastro(name='registro'))
+                print("Tela cadastro OK")
+                print("Screens atuais:", self.sm.screen_names)
+            except Exception as e:
+                print(f"Erro tela cadastro: {e}")
+                traceback.print_exc()
+
+            # INTERFACE IA
+            try:
+                tela_principal = interface_ia.TelaPrincipal(name='principal')
+                self.sm.add_widget(tela_principal)
+                print("Tela principal OK")
+                print("Screens atuais:", self.sm.screen_names)
+            except Exception as e:
+                print("Erro tela principal:")
+                traceback.print_exc()
+
+            # Loja
+            try:
+                tela_loja = loja.TelaLoja(name='loja')
+                self.sm.add_widget(tela_loja)
+                print("Tela loja OK")
+                print("Screens atuais:", self.sm.screen_names)
+            except Exception as e:
+                print("Erro tela loja:")
+                traceback.print_exc()
+
+            self.sm.current = 'splash'
+
+        except Exception as e:
+            print(f"Erro geral ao carregar telas: {e}")
+            traceback.print_exc()
+
+        return self.sm
 
     def on_start(self):
-        """
-        Esta função roda assim que o App inicia. 
-        Ela tenta forçar o Android a manter a tela ligada (Wake Lock).
-        """
+        if os.name == 'posix':
+            self.aplicar_wake_lock()
+
+            try:
+                from android.permissions import request_permissions, Permission
+
+                permissoes = [
+                    Permission.CAMERA,
+                    Permission.READ_EXTERNAL_STORAGE,
+                    Permission.WRITE_EXTERNAL_STORAGE,
+                ]
+
+                # Android mais novo
+                if hasattr(Permission, "READ_MEDIA_IMAGES"):
+                    permissoes.append(Permission.READ_MEDIA_IMAGES)
+
+                request_permissions(permissoes)
+                print("Permissões Android solicitadas")
+            except Exception as e:
+                print(f"Erro permissões Android: {e}")
+                traceback.print_exc()
+
+    def aplicar_wake_lock(self):
         try:
             from android.runnable import run_on_ui_thread
+
             @run_on_ui_thread
             def keep_screen_on():
                 from jnius import autoclass
@@ -60,24 +153,25 @@ class NeuralApp(MDApp):
                 activity = PythonActivity.mActivity
                 WindowManager = autoclass('android.view.WindowManager$LayoutParams')
                 activity.getWindow().addFlags(WindowManager.FLAG_KEEP_SCREEN_ON)
+
             keep_screen_on()
         except Exception as e:
-            print(f"Aviso: WakeLock não aplicado (comum fora do Android): {e}")
+            print(f"WakeLock não disponível: {e}")
+            traceback.print_exc()
 
     def on_pause(self):
-        """
-        Quando o usuário minimiza o app ou a tela apaga.
-        Retornar True impede que o Android mate o processo imediatamente.
-        """
         return True
 
     def on_resume(self):
-        """
-        Quando o usuário volta para o aplicativo.
-        """
         pass
 
+
 if __name__ == "__main__":
-    # Garante que o teclado não cubra os campos no Android
-    Window.softinput_mode = "below_target"
+    Window.softinput_mode = "resize"
     NeuralApp().run()
+    
+    
+                
+            
+
+        

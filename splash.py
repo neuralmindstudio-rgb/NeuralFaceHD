@@ -12,42 +12,42 @@ class TelaSplash(Screen):
         super().__init__(**kw)
         layout = FloatLayout()
         
-        # --- MELHORIA 1: FUNDO INVISÍVEL ---
-        # Mudamos o fundo do canvas para PRETO PURO (0,0,0,1)
-        # Como o fundo da sua logo é preto, ela vai "mesclar" e ficar invisível
+        # FUNDO PRETO PURO
         with layout.canvas.before:
-            Color(0, 0, 0, 1) # Preto puro
-            self.rect = Rectangle(size=(2000, 4000), pos=(0,0))
+            Color(0, 0, 0, 1) 
+            self.rect = Rectangle(size=(3000, 5000), pos=(0,0))
             
-        # Centralizando o arquivo logo.png
+        # Centralizando a logo.png
+        # IMPORTANTE: A logo.png deve estar na raiz do seu GitHub
         self.logo = Image(
             source='logo.png', 
             size_hint=(None, None),
-            size=(dp(280), dp(280)), # Tamanho imponente
+            size=(dp(280), dp(280)),
             pos_hint={'center_x': 0.5, 'center_y': 0.52},
-            opacity=0 # Começa invisível para o fade-in
+            opacity=0 
         )
         
         layout.add_widget(self.logo)
         self.add_widget(layout)
         
     def on_enter(self):
-        # ANIMAÇÃO: Mais rápida e agressiva
-        # Fade-in inicial mais veloz (1.0s)
-        fade_in = Animation(opacity=1, duration=1.0)
+        # ANIMAÇÃO DE ENTRADA
+        fade_in = Animation(opacity=1, duration=1.2)
         
-        # --- MELHORIA 2: PISCAR MAIS RÁPIDO ---
-        # Reduzimos a duração de 2s para 1.0s em cada perna
-        pulsa = Animation(size=(dp(310), dp(310)), opacity=0.8, duration=1.0, t='in_out_quad')
-        pulsa += Animation(size=(dp(280), dp(280)), opacity=0.3, duration=1.0, t='in_out_quad')
+        # ANIMAÇÃO DE PULSAÇÃO (Efeito Respirar)
+        pulsa = Animation(size=(dp(300), dp(300)), opacity=0.7, duration=1.5, t='in_out_quad')
+        pulsa += Animation(size=(dp(280), dp(280)), opacity=1.0, duration=1.5, t='in_out_quad')
         pulsa.repeat = True
         
-        # Inicia a sequência
+        # Inicia as animações
         fade_in.start(self.logo)
-        pulsa.start(self.logo)
+        # Agendamos a pulsação para começar logo após o fade_in
+        Clock.schedule_once(lambda dt: pulsa.start(self.logo), 1.2)
         
-        # Mantemos os 7 segundos para apreciarem a logo
-        Clock.schedule_once(self.ir_para_login, 10)
+        # Tempo total de exibição reduzido para 6 segundos (melhor experiência)
+        Clock.schedule_once(self.ir_para_login, 6)
         
     def ir_para_login(self, dt):
-        self.manager.current = 'login'
+        # Transição suave para a tela de login
+        if self.manager:
+            self.manager.current = 'login'

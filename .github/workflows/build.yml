@@ -1,46 +1,38 @@
-name: Build Android App (FINAL-SUCCESS)
-on:
-  push:
-    branches: [ main ]
+[app]
+# (Seção Principal)
+title = Neural Face HD
+package.name = neuralfacehd
+package.domain = br.com.neuralmindstudio
+source.dir = .
+source.include_exts = py,png,jpg,kv,atlas,json,onnx,keystore
+version = 1.0.0
 
-jobs:
-  build:
-    runs-on: ubuntu-22.04
-    steps:
-      - uses: actions/checkout@v4
+# (Requisitos de Hardware e Permissões)
+android.permissions = INTERNET, WRITE_EXTERNAL_STORAGE, READ_EXTERNAL_STORAGE, CAMERA
+android.api = 33
+android.minapi = 21
+android.sdk = 33
+android.ndk = 25b
+android.archs = arm64-v8a, armeabi-v7a
 
-      - name: Instalar Dependencias
-        run: |
-          sudo apt update
-          sudo apt install -y python3-pip build-essential git python3 python3-dev \
-          ffmpeg libsdl2-dev libsdl2-image-dev libsdl2-mixer-dev libsdl2-ttf-dev \
-          libportmidi-dev libswscale-dev libavformat-dev libavcodec-dev zlib1g-dev \
-          libgstreamer1.0-dev openjdk-17-jdk ant autoconf automake libtool pkg-config \
-          libunwind-dev libcrypt1
+# (Arquivos de IA e Assets)
+# Certifique-se de que a pasta gfpgan e o arquivo onnx estão incluídos
+source.include_patterns = assets/*, gfpgan/*, *.onnx
 
-      - name: Configurar Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.10'
+# (Configuração de Assinatura - Play Store)
+# IMPORTANTE: Substitua 'SUA_SENHA_AQUI' pela senha que você criou para a keystore
+android.keystore = neuralface.keystore
+android.keystore_password = SUA_SENHA_AQUI
+android.keyalias = neuralface
+android.keyalias_password = SUA_SENHA_AQUI
 
-      - name: Ferramentas de Build
-        run: |
-          pip install --upgrade pip
-          pip install cython==0.29.33 buildozer==1.5.0
+# (Ícones e Splash)
+icon.filename = logo.png
+presplash.filename = splash.png
 
-      - name: Gerar App Bundle (AAB)
-        run: |
-          export ACLOCAL_PATH=/usr/share/aclocal
-          # Aceita licenças de forma persistente antes de iniciar
-          yes | buildozer android release
-        env:
-          APP_ANDROID_KEYSTORE: release.keystore
-          APP_ANDROID_KEYSTORE_PASS: ${{ secrets.KEYSTORE_PASSWORD }}
-          APP_ANDROID_KEYALIAS: ${{ secrets.KEY_ALIAS }}
-          APP_ANDROID_KEYALIAS_PASS: ${{ secrets.KEY_ALIAS_PASSWORD }}
+# (Configurações do Python/Kivy)
+requirements = python3,kivy==2.2.1,kivymd==1.1.1,pillow,requests,opencv-python,numpy,onnxruntime,insightface
 
-      - name: Upload do App
-        uses: actions/upload-artifact@v4
-        with:
-          name: NeuralFaceHD_AAB
-          path: bin/*.aab
+# (Buildozer Options)
+log_level = 2
+warn_on_root = 0
