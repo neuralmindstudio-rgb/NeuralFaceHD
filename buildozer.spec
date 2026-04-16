@@ -25,6 +25,7 @@ android.accept_sdk_license = True
 android.skip_update = False
 android.uses_cleartext_traffic = True
 android.copy_libs = 1
+android.release_artifact = apk
 p4a.bootstrap = sdl2
 
 # --- ASSINATURA DA PLAY STORE ---
