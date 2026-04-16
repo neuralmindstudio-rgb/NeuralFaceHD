@@ -23,40 +23,41 @@ jobs:
         with:
           python-version: '3.10'
 
-      - name: System Tuning
-        run: |
-          sudo prlimit --pid $$ --nofile=1048576:1048576
-
-      - name: Cache Buildozer
-        uses: actions/cache@v3
-        with:
-          path: .buildozer
-          key: ${{ runner.os }}-buildozer-${{ hashFiles('buildozer.spec') }}
-
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y libunwind-dev build-essential libffi-dev python3-dev ffmpeg libsdl2-dev libsdl2-image-dev libsdl2-mixer-dev libsdl2-ttf-dev libportmidi-dev libswscale-dev libavformat-dev libavcodec-dev zlib1g-dev
-          sudo apt-get install -y libgstreamer1.0-dev gstreamer1.0-plugins-base gstreamer1.0-plugins-good gstreamer1.0-plugins-bad gstreamer1.0-plugins-ugly autoconf automake libtool pkg-config cmake
+          sudo apt-get install -y build-essential libffi-dev python3-dev
           pip install --upgrade pip
           pip install buildozer cython==0.29.33 setuptools
 
       - name: Build with Buildozer
         run: |
-          # Comando para gerar o release assinado
+          # 🔥 PASSO MESTRE: Criar a chave automaticamente se ela não estiver lá
+          if [ ! -f "neuralface_oficial.keystore" ]; then
+            echo "Criando nova chave..."
+            keytool -genkey -noprompt \
+              -keystore neuralface_oficial.keystore \
+              -alias neural_oficial \
+              -storepass neural2026 \
+              -keypass neural2026 \
+              -keyalg RSA \
+              -keysize 2048 \
+              -validity 10000 \
+              -dname "CN=Anderson, OU=Neural, O=Neural, L=Lages, S=SC, C=BR"
+          fi
+          
+          # Gera o APK assinado
           yes | buildozer -v android release
         env:
-          # --- DADOS PARA FORÇAR ASSINATURA ---
-          APP_ANDROID_KEYSTORE: neuralface.keystore
-          APP_ANDROID_KEYALIAS: neuralface
-          APP_ANDROID_KEYSTORE_PASSWORD: Sh@dow!976
-          APP_ANDROID_KEYALIAS_PASSWORD: Sh@dow!976
-          # ------------------------------------
+          APP_ANDROID_KEYSTORE: neuralface_oficial.keystore
+          APP_ANDROID_KEYALIAS: neural_oficial
+          APP_ANDROID_KEYSTORE_PASSWORD: neural2026
+          APP_ANDROID_KEYALIAS_PASSWORD: neural2026
 
       - name: Upload Artifact
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: NeuralFaceHD-APK-FINAL
+          name: NeuralFaceHD-APK-ASSINADO
           path: bin/
       
