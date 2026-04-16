@@ -1,40 +1,45 @@
 [app]
+# Nome e Identidade
 title = Neural Face HD
 package.name = neuralfacehd
-package.domain = com.anderson
-
+package.domain = br.com.neuralmindstudio
 source.dir = .
-source.include_exts = py,png,jpg,kv,atlas,json,ttf,onnx
-source.include_patterns = assets/*,images/*
+source.include_exts = py,png,jpg,kv,atlas,json,onnx,keystore,ttf
+source.include_patterns = assets/*, gfpgan/*, *.onnx, images/*
 
-version = 1.3
+# VERSÃO OFICIAL DE LANÇAMENTO
+version = 1.0.0
+android.numeric_version = 1
 orientation = portrait
-
 fullscreen = 0
 
-# 🔥 REQUISITOS LIMPOS E ESTÁVEIS
-requirements = python3,kivy==2.3.0,kivymd==1.2.0,requests,urllib3,certifi,pyrebase4,pycryptodome,cryptography
-
-# 🔐 Permissões
+# Requisitos do Android para a Play Store
 android.permissions = INTERNET, CAMERA, READ_EXTERNAL_STORAGE, WRITE_EXTERNAL_STORAGE, READ_MEDIA_IMAGES, ACCESS_NETWORK_STATE
-
-# ⚙️ CONFIG ANDROID ESTÁVEL
 android.api = 33
 android.minapi = 21
+android.sdk = 33
 android.ndk = 25b
-
+android.archs = arm64-v8a, armeabi-v7a
 android.accept_sdk_license = True
 android.skip_update = False
 android.uses_cleartext_traffic = True
-
-# 📱 64 bits
-android.archs = arm64-v8a
-
-# 🔧 Bootstrap correto
+android.copy_libs = 1
 p4a.bootstrap = sdl2
 
-android.copy_libs = 1
+# --- ASSINATURA DA PLAY STORE ---
+# Isso garante que o Google aceite o seu arquivo como oficial
+android.keystore = neuralface.keystore
+android.keystore_password = Sh@dow!976
+android.keyalias = neuralface
+android.keyalias_password = Sh@dow!976
 
-[buildozer]
+# Assets Visuais
+icon.filename = logo.png
+presplash.filename = splash.png
+
+# Requisitos do Python (Mantendo suas correções)
+requirements = python3,kivy==2.3.0,kivymd==1.2.0,requests,urllib3,certifi,pyrebase4,pycryptodome,cryptography,pillow,numpy,onnxruntime,insightface
+
+# Configurações de Build
 log_level = 2
-warn_on_root = 1
+warn_on_root = 0
