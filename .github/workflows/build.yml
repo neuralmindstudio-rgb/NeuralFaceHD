@@ -47,9 +47,8 @@ jobs:
 
       - name: Build with Buildozer
         run: |
-          # COMANDO AJUSTADO: Gera primeiro o APK e depois o AAB
-          yes | buildozer -v android release apk
-          yes | buildozer -v android release aab
+          # CORREÇÃO: Comando único 'release' para garantir que ele use a KEYSTORE
+          yes | buildozer -v android release
         env:
           APP_ANDROID_KEYSTORE: neuralface.keystore
           APP_ANDROID_KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
@@ -61,5 +60,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: NeuralFaceHD-Arquivos-Finais
-          # PATH AJUSTADO: Pega a pasta bin inteira (com APK e AAB)
+          # Pega tudo na pasta bin para garantir que o APK assinado venha junto
           path: bin/
