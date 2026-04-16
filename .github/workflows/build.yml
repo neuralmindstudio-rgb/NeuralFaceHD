@@ -33,35 +33,30 @@ jobs:
           path: .buildozer
           key: ${{ runner.os }}-buildozer-${{ hashFiles('buildozer.spec') }}
 
-      # DEPENDÊNCIAS: Kit ultra completo para não parar em nenhum ModuleNotFound
       - name: Install dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y libunwind-dev build-essential libffi-dev python3-dev ffmpeg libsdl2-dev libsdl2-image-dev libsdl2-mixer-dev libsdl2-ttf-dev libportmidi-dev libswscale-dev libavformat-dev libavcodec-dev zlib1g-dev
           sudo apt-get install -y libgstreamer1.0-dev gstreamer1.0-plugins-base gstreamer1.0-plugins-good gstreamer1.0-plugins-bad gstreamer1.0-plugins-ugly autoconf automake libtool pkg-config cmake
           pip install --upgrade pip
-          # 🔥 ADICIONADO 'build' e 'wheel' para sanar o erro de agora
-          pip install buildozer cython==0.29.33 setuptools appdirs packaging colorama jinja2 six toml sh build wheel
+          # Instalamos apenas o básico para não dar conflito
+          pip install buildozer cython==0.29.33 setuptools
 
       - name: Build with Buildozer
         run: |
-          # 1. Força a aceitação das licenças do SDK do GitHub
-          yes | /usr/local/lib/android/sdk/tools/bin/sdkmanager --licenses || true
-          
-          # 2. Limpa resíduos
-          buildozer android clean
-          
-          # 3. Roda o release simples
+          # Usamos apenas 'release' - o segredo para assinar com a sua keystore
           yes | buildozer -v android release
         env:
+          # Forçamos o Buildozer a ver as senhas aqui para garantir a assinatura
           APP_ANDROID_KEYSTORE: neuralface.keystore
-          # 🔥 O SEGREDO: Apontando para onde o SDK do GitHub REALMENTE está
-          ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
-          ANDROID_HOME: /usr/local/lib/android/sdk
+          APP_ANDROID_KEYSTORE_PASSWORD: Sh@dow!976
+          APP_ANDROID_KEYALIAS_PASSWORD: Sh@dow!976
 
       - name: Upload Artifact
+        # O 'always()' é o que vai garantir que o APK apareça no site mesmo com avisos
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: NeuralFaceHD-Arquivos-Finais
+          name: NeuralFaceHD-APK-FINAL
           path: bin/
+      
