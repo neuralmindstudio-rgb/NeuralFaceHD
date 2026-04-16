@@ -33,14 +33,15 @@ jobs:
           path: .buildozer
           key: ${{ runner.os }}-buildozer-${{ hashFiles('buildozer.spec') }}
 
+      # DEPENDÊNCIAS: Kit completo para evitar erros de ModuleNotFound durante o build/clean
       - name: Install dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y libunwind-dev build-essential libffi-dev python3-dev ffmpeg libsdl2-dev libsdl2-image-dev libsdl2-mixer-dev libsdl2-ttf-dev libportmidi-dev libswscale-dev libavformat-dev libavcodec-dev zlib1g-dev
           sudo apt-get install -y libgstreamer1.0-dev gstreamer1.0-plugins-base gstreamer1.0-plugins-good gstreamer1.0-plugins-bad gstreamer1.0-plugins-ugly autoconf automake libtool pkg-config cmake
           pip install --upgrade pip
-          # 🔥 Adicionado colorama para resolver o erro atual
-          pip install buildozer cython==0.29.33 setuptools appdirs packaging colorama
+          # Adicionado jinja2 e six para sanar o erro atual e prevenir os próximos
+          pip install buildozer cython==0.29.33 setuptools appdirs packaging colorama jinja2 six
 
       - name: Build with Buildozer
         run: |
