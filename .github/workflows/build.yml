@@ -33,15 +33,15 @@ jobs:
           path: .buildozer
           key: ${{ runner.os }}-buildozer-${{ hashFiles('buildozer.spec') }}
 
-      # DEPENDÊNCIAS: Kit completo de módulos internos do Buildozer/P4A
+      # DEPENDÊNCIAS: Kit ultra completo para não parar em nenhum ModuleNotFound
       - name: Install dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y libunwind-dev build-essential libffi-dev python3-dev ffmpeg libsdl2-dev libsdl2-image-dev libsdl2-mixer-dev libsdl2-ttf-dev libportmidi-dev libswscale-dev libavformat-dev libavcodec-dev zlib1g-dev
           sudo apt-get install -y libgstreamer1.0-dev gstreamer1.0-plugins-base gstreamer1.0-plugins-good gstreamer1.0-plugins-bad gstreamer1.0-plugins-ugly autoconf automake libtool pkg-config cmake
           pip install --upgrade pip
-          # 🔥 INSTALAÇÃO COMPLETA: appdirs, packaging, colorama, jinja2, six, toml e sh
-          pip install buildozer cython==0.29.33 setuptools appdirs packaging colorama jinja2 six toml sh
+          # 🔥 ADICIONADO 'build' e 'wheel' para sanar o erro de agora
+          pip install buildozer cython==0.29.33 setuptools appdirs packaging colorama jinja2 six toml sh build wheel
 
       - name: Build with Buildozer
         run: |
