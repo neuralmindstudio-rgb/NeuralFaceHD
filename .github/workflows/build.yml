@@ -1,38 +1,48 @@
-[app]
-# (Seção Principal)
-title = Neural Face HD
-package.name = neuralfacehd
-package.domain = br.com.neuralmindstudio
-source.dir = .
-source.include_exts = py,png,jpg,kv,atlas,json,onnx,keystore
-version = 1.0.0
+name: Build APK Oficial
 
-# (Requisitos de Hardware e Permissões)
-android.permissions = INTERNET, WRITE_EXTERNAL_STORAGE, READ_EXTERNAL_STORAGE, CAMERA
-android.api = 33
-android.minapi = 21
-android.sdk = 33
-android.ndk = 25b
-android.archs = arm64-v8a, armeabi-v7a
+on:
+  push:
+    branches: [ main ]
+    paths-ignore:
+      - '**.md'
+      - '**.json'
 
-# (Arquivos de IA e Assets)
-# Certifique-se de que a pasta gfpgan e o arquivo onnx estão incluídos
-source.include_patterns = assets/*, gfpgan/*, *.onnx
+jobs:
+  build:
+    runs-on: ubuntu-22.04
 
-# (Configuração de Assinatura - Play Store)
-# IMPORTANTE: Substitua 'SUA_SENHA_AQUI' pela senha que você criou para a keystore
-android.keystore = neuralface.keystore
-android.keystore_password = SUA_SENHA_AQUI
-android.keyalias = neuralface
-android.keyalias_password = SUA_SENHA_AQUI
+    steps:
+      - uses: actions/checkout@v3
 
-# (Ícones e Splash)
-icon.filename = logo.png
-presplash.filename = splash.png
+      - name: Get Date
+        id: get-date
+        run: |
+          echo "date=$(date +'%Y-%m-%d')" >> $GITHUB_OUTPUT
 
-# (Configurações do Python/Kivy)
-requirements = python3,kivy==2.2.1,kivymd==1.1.1,pillow,requests,opencv-python,numpy,onnxruntime,insightface
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
 
-# (Buildozer Options)
-log_level = 2
-warn_on_root = 0
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential libffi-dev python3-dev ffmpeg libsdl2-dev libsdl2-image-dev libsdl2-mixer-dev libsdl2-ttf-dev libportmidi-dev libswscale-dev libavformat-dev libavcodec-dev zlib1g-dev
+          sudo apt-get install -y libgstreamer1.0-gstreamer-lite1.0-dev libgstreamer-plugins-base1.0-dev autoconf automake libtool pkg-config cmake
+          pip install --upgrade pip
+          pip install buildozer cython==0.29.33 setuptools
+
+      - name: Build with Buildozer
+        run: |
+          yes | buildozer -v android release
+        env:
+          # Isso garante que ele use as senhas e a chave que estão no seu buildozer.spec
+          APP_ANDROID_KEYSTORE: neuralface.keystore
+          APP_ANDROID_KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          APP_ANDROID_KEYALIAS_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: NeuralFaceHD-Oficial
+          path: bin/*.apk
