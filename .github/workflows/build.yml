@@ -12,18 +12,31 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # 🔥 ADICIONADO: Java 17 para o Gradle 8+ funcionar corretamente
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.10'
 
-      # 🔥 CACHE: Isso vai fazer os próximos builds serem muito mais rápidos
+      # 🔥 ADICIONADO: Aumenta o limite de arquivos para o KivyMD não travar
+      - name: System Tuning
+        run: |
+          sudo prlimit --pid $$ --nofile=1048576:1048576
+
+      # 🔥 CACHE: Mantido conforme seu código
       - name: Cache Buildozer
         uses: actions/cache@v3
         with:
           path: .buildozer
           key: ${{ runner.os }}-buildozer-${{ hashFiles('buildozer.spec') }}
 
+      # 🔥 DEPENDÊNCIAS: Mantido exatamente como no seu código
       - name: Install dependencies
         run: |
           sudo apt-get update
