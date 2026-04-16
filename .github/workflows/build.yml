@@ -12,18 +12,17 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # 🔥 COMANDO NOVO: Limpa o lixo do servidor para não faltar espaço
-      - name: Free Disk Space
-        run: |
-          sudo rm -rf /usr/share/dotnet
-          sudo rm -rf /opt/ghc
-          sudo rm -rf "/usr/local/share/boost"
-          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
-
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.10'
+
+      # 🔥 CACHE: Isso vai fazer os próximos builds serem muito mais rápidos
+      - name: Cache Buildozer
+        uses: actions/cache@v3
+        with:
+          path: .buildozer
+          key: ${{ runner.os }}-buildozer-${{ hashFiles('buildozer.spec') }}
 
       - name: Install dependencies
         run: |
