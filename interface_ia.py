@@ -358,14 +358,14 @@ class TelaPrincipal(Screen):
         Intent = autoclass('android.content.Intent')
         currentActivity = PythonActivity.mActivity
         
-        # 🔥 CORREÇÃO: Nome limpo e sem caracteres que o Android invalida
-        timestamp = time.strftime("%Y%m%d_%H%M%S")
-        nome = f"NFHD_{timestamp}.jpg"
+        # 🔥 CORREÇÃO: Nome dinâmico com timestamp para evitar conflitos
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        nome_sugerido = f"NFHD_{timestamp}.jpg"
 
         intent = Intent(Intent.ACTION_CREATE_DOCUMENT)
         intent.addCategory(Intent.CATEGORY_OPENABLE)
         intent.setType("image/jpeg")
-        intent.putExtra(Intent.EXTRA_TITLE, nome)
+        intent.putExtra(Intent.EXTRA_TITLE, nome_sugerido)
         currentActivity.startActivityForResult(intent, self.CREATE_FILE_REQUEST)
 
     def on_activity_result(self, request_code, result_code, intent):
@@ -425,30 +425,31 @@ class TelaPrincipal(Screen):
     def salvar_em_uri(self, uri):
         try:
             if not self.arquivo_gerado_agora or not os.path.exists(self.arquivo_gerado_agora):
-                print("Erro salvar_em_uri: arquivo não encontrado")
                 return False
 
             PythonActivity = autoclass('org.kivy.android.PythonActivity')
             currentActivity = PythonActivity.mActivity
             resolver = currentActivity.getContentResolver()
 
-            # 🔥 IMPORTANTE: modo "w" resolve erro de salvamento
+            # 🔥 CORREÇÃO: Uso de copyfileobj e sync para garantir escrita física no Android
             stream = resolver.openOutputStream(uri, "w")
             if stream is None:
-                print("Erro salvar_em_uri: stream None")
                 return False
 
             with open(self.arquivo_gerado_agora, "rb") as origem:
-                while True:
-                    chunk = origem.read(8192)
-                    if not chunk:
-                        break
-                    stream.write(chunk)
+                shutil.copyfileobj(origem, stream)
 
             stream.flush()
+            # Força o sistema a sincronizar o arquivo
+            pfd = resolver.openFileDescriptor(uri, "rw")
+            fd_desc = pfd.getFileDescriptor()
+            fd_desc.sync()
+            pfd.close()
             stream.close()
 
-            print("Arquivo salvo com sucesso")
+            # Limpa caches para liberar memória
+            Cache.remove('kv.image')
+            Cache.remove('kv.texture')
             return True
 
         except Exception as e:
@@ -586,7 +587,8 @@ class TelaPrincipal(Screen):
                 if not bd or not bd.local_id:
                     raise Exception("Usuário não autenticado")
                 pasta_app = App.get_running_app().user_data_dir
-                nome_unico = os.path.join(pasta_app, "neural_result.jpg")
+                # 🔥 CORREÇÃO: Nome de arquivo temporário dinâmico
+                nome_unico = os.path.join(pasta_app, f"temp_res_{int(time.time())}.jpg")
                 payload = {'face_index': str(self.face_index)}
                 combinacao_atual = f"{self.path_base}_{self.path_rosto}"
                 deve_cobrar = combinacao_atual != self.ultima_combinacao
@@ -816,11 +818,11 @@ class TelaPrincipal(Screen):
             "declarando estar ciente de:\n\n"
             "1. [b]PROTEÇÃO À CRIANÇA (ECA):[/b] É terminantemente proibida a manipulação de "
             "imagens de menores de 18 anos. Violações estão sujeitas às penas da Lei 8.069/90 "
-            "e da Lei 14.811/2024 (ECA Digital).\n"
+            "e da Lei 14.811/2024 (ECA Digital).\n\n"
             "2. [b]DIREITO DE IMAGEM:[/b] Você declara possuir autorização legal e consensual "
-            "de todas as pessoas cujas faces serão processadas.\n"
+            "de todas as pessoas cujas faces serão processadas.\n\n"
             "3. [b]USO ILÍCITO:[/b] Proibida a criação de conteúdo pornográfico (Deepnude), "
-            "difamatório, político-eleitoral enganoso ou que promova ódio/violência.\n"
+            "difamatório, político-eleitoral enganoso ou que promova ódio/violência.\n/n"
             "4. [b]ISENÇÃO:[/b] O desenvolvedor fornece apenas a tecnologia. O usuário é o "
             "único responsável pela destinação do conteúdo gerado.\n\n"
             "O uso indevido resultará em banimento imediato e cooperação total com autoridades judiciais."
