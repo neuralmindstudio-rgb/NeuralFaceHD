@@ -19,7 +19,8 @@ android.api = 33
 android.minapi = 21
 android.sdk = 33
 android.ndk = 25b
-android.archs = arm64-v8a, armeabi-v7a
+# 🔥 Ajustado para 64 bits apenas, para garantir que o build termine com sucesso
+android.archs = arm64-v8a
 android.accept_sdk_license = True
 android.skip_update = False
 android.uses_cleartext_traffic = True
@@ -27,7 +28,6 @@ android.copy_libs = 1
 p4a.bootstrap = sdl2
 
 # --- ASSINATURA DA PLAY STORE ---
-# Isso garante que o Google aceite o seu arquivo como oficial
 android.keystore = neuralface.keystore
 android.keystore_password = Sh@dow!976
 android.keyalias = neuralface
