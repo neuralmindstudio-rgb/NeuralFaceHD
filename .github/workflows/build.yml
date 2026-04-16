@@ -39,21 +39,21 @@ jobs:
           sudo apt-get install -y libunwind-dev build-essential libffi-dev python3-dev ffmpeg libsdl2-dev libsdl2-image-dev libsdl2-mixer-dev libsdl2-ttf-dev libportmidi-dev libswscale-dev libavformat-dev libavcodec-dev zlib1g-dev
           sudo apt-get install -y libgstreamer1.0-dev gstreamer1.0-plugins-base gstreamer1.0-plugins-good gstreamer1.0-plugins-bad gstreamer1.0-plugins-ugly autoconf automake libtool pkg-config cmake
           pip install --upgrade pip
-          # Instalamos apenas o básico para não dar conflito
           pip install buildozer cython==0.29.33 setuptools
 
       - name: Build with Buildozer
         run: |
-          # Usamos apenas 'release' - o segredo para assinar com a sua keystore
+          # Comando para gerar o release assinado
           yes | buildozer -v android release
         env:
-          # Forçamos o Buildozer a ver as senhas aqui para garantir a assinatura
+          # --- DADOS PARA FORÇAR ASSINATURA ---
           APP_ANDROID_KEYSTORE: neuralface.keystore
+          APP_ANDROID_KEYALIAS: neuralface
           APP_ANDROID_KEYSTORE_PASSWORD: Sh@dow!976
           APP_ANDROID_KEYALIAS_PASSWORD: Sh@dow!976
+          # ------------------------------------
 
       - name: Upload Artifact
-        # O 'always()' é o que vai garantir que o APK apareça no site mesmo com avisos
         if: always()
         uses: actions/upload-artifact@v4
         with:
