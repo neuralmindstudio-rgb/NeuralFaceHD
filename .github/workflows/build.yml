@@ -30,7 +30,7 @@ jobs:
           pip install --upgrade pip
           pip install buildozer cython==0.29.33 setuptools appdirs packaging colorama jinja2 six toml sh build wheel
 
-      - name: Build with Buildozer
+      - name: Build and Manual Sign
         run: |
           # 1. CRIAR A CHAVE OFICIAL
           keytool -genkey -noprompt \
@@ -43,23 +43,24 @@ jobs:
             -validity 10000 \
             -dname "CN=Anderson, OU=Neural, O=Neural, L=Lages, S=SC, C=BR"
           
-          # 2. FORÇAR A CHAVE PARA DENTRO DA ESTRUTURA DO ANDROID (O PULO DO GATO)
-          # Isso garante que o jarsigner encontre o arquivo independente de caminhos relativos
-          mkdir -p .buildozer/android/platform/build-arm64-v8a/dists/neuralfacehd
-          cp neuralface_oficial.keystore .buildozer/android/platform/build-arm64-v8a/dists/neuralfacehd/
-          
-          # 3. EXECUTAR O RELEASE PASSANDO AS VARIÁVEIS NA LINHA DE COMANDO
-          APP_ANDROID_KEYSTORE=neuralface_oficial.keystore \
-          APP_ANDROID_KEYALIAS=neural_oficial \
-          APP_ANDROID_KEYSTORE_PASSWORD=neural2026 \
-          APP_ANDROID_KEYALIAS_PASSWORD=neural2026 \
+          # 2. GERAR O APK (Mesmo que saia unsigned, vamos resolver no passo 3)
           yes | buildozer -v android release
           
-          # 4. LIMPEZA E ORGANIZAÇÃO
-          mkdir -p bin
+          # 3. ASSINATURA MANUAL (O XEQUE-MATE)
+          # Localiza o arquivo gerado na pasta bin
+          APK_FILE=$(ls bin/*unsigned.apk | head -n 1)
+          echo "Assinando manualmente o arquivo: $APK_FILE"
+          
+          jarsigner -verbose -sigalg SHA256withRSA -digestalg SHA256 \
+            -keystore neuralface_oficial.keystore \
+            -storepass neural2026 \
+            -keypass neural2026 \
+            $APK_FILE neural_oficial
+
+          # 4. ORGANIZAÇÃO FINAL
+          # Criamos um arquivo com nome claro para você não ter dúvida
+          cp $APK_FILE bin/NeuralFaceHD_PRONTO_PARA_TESTE.apk
           cp neuralface_oficial.keystore bin/
-          # Tenta renomear qualquer arquivo unsigned para garantir que você saiba o que é o que
-          mv bin/*unsigned.apk bin/VERIFICAR-SE-ESTA-ASSINADO.apk || true
         env:
           ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
 
