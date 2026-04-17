@@ -32,31 +32,34 @@ jobs:
 
       - name: Build with Buildozer
         run: |
-          # 1. CRIAR A NOVA CHAVE OFICIAL (NA RAIZ)
-          if [ ! -f "neuralface_oficial.keystore" ]; then
-            keytool -genkey -noprompt \
-              -keystore neuralface_oficial.keystore \
-              -alias neural_oficial \
-              -storepass neural2026 \
-              -keypass neural2026 \
-              -keyalg RSA \
-              -keysize 2048 \
-              -validity 10000 \
-              -dname "CN=Anderson, OU=Neural, O=Neural, L=Lages, S=SC, C=BR"
-          fi
+          # 1. CRIAR A CHAVE OFICIAL
+          keytool -genkey -noprompt \
+            -keystore neuralface_oficial.keystore \
+            -alias neural_oficial \
+            -storepass neural2026 \
+            -keypass neural2026 \
+            -keyalg RSA \
+            -keysize 2048 \
+            -validity 10000 \
+            -dname "CN=Anderson, OU=Neural, O=Neural, L=Lages, S=SC, C=BR"
           
-          # 2. GERAR O APK ASSINADO
-          # Passamos as variáveis na mesma linha do comando para forçar a assinatura
+          # 2. FORÇAR A CHAVE PARA DENTRO DA ESTRUTURA DO ANDROID (O PULO DO GATO)
+          # Isso garante que o jarsigner encontre o arquivo independente de caminhos relativos
+          mkdir -p .buildozer/android/platform/build-arm64-v8a/dists/neuralfacehd
+          cp neuralface_oficial.keystore .buildozer/android/platform/build-arm64-v8a/dists/neuralfacehd/
+          
+          # 3. EXECUTAR O RELEASE PASSANDO AS VARIÁVEIS NA LINHA DE COMANDO
           APP_ANDROID_KEYSTORE=neuralface_oficial.keystore \
           APP_ANDROID_KEYALIAS=neural_oficial \
           APP_ANDROID_KEYSTORE_PASSWORD=neural2026 \
           APP_ANDROID_KEYALIAS_PASSWORD=neural2026 \
           yes | buildozer -v android release
           
-          # 3. PREPARAR ARQUIVOS PARA DOWNLOAD
+          # 4. LIMPEZA E ORGANIZAÇÃO
           mkdir -p bin
-          # Copia a chave gerada para você baixar e guardar
           cp neuralface_oficial.keystore bin/
+          # Tenta renomear qualquer arquivo unsigned para garantir que você saiba o que é o que
+          mv bin/*unsigned.apk bin/VERIFICAR-SE-ESTA-ASSINADO.apk || true
         env:
           ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
 
