@@ -32,7 +32,7 @@ jobs:
 
       - name: Build with Buildozer
         run: |
-          # 1. CRIAR A NOVA CHAVE OFICIAL
+          # 1. CRIAR A NOVA CHAVE OFICIAL (NA RAIZ)
           keytool -genkey -noprompt \
             -keystore neuralface_oficial.keystore \
             -alias neural_oficial \
@@ -43,17 +43,20 @@ jobs:
             -validity 10000 \
             -dname "CN=Anderson, OU=Neural, O=Neural, L=Lages, S=SC, C=BR"
           
-          # 2. MOVER A CHAVE PARA A PASTA BIN (PARA VOCÊ PODER BAIXAR E GUARDAR)
-          mkdir -p bin
-          cp neuralface_oficial.keystore bin/
+          # 2. EXPORTAR AS VARIÁVEIS PARA O AMBIENTE DO SHELL (FORÇA A ASSINATURA)
+          export APP_ANDROID_KEYSTORE=neuralface_oficial.keystore
+          export APP_ANDROID_KEYALIAS=neural_oficial
+          export APP_ANDROID_KEYSTORE_PASSWORD=neural2026
+          export APP_ANDROID_KEYALIAS_PASSWORD=neural2026
           
           # 3. GERAR O APK ASSINADO
+          # O comando release usa as variáveis exportadas acima
           yes | buildozer -v android release
+          
+          # 4. PREPARAR ARQUIVOS PARA DOWNLOAD
+          mkdir -p bin
+          cp neuralface_oficial.keystore bin/
         env:
-          APP_ANDROID_KEYSTORE: neuralface_oficial.keystore
-          APP_ANDROID_KEYALIAS: neural_oficial
-          APP_ANDROID_KEYSTORE_PASSWORD: neural2026
-          APP_ANDROID_KEYALIAS_PASSWORD: neural2026
           ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
 
       - name: Upload Artifact
