@@ -1,4 +1,4 @@
-name: Build APK Oficial Assinado
+name: Build AAB Oficial Play Store
 
 on:
   push:
@@ -30,9 +30,9 @@ jobs:
           pip install --upgrade pip
           pip install buildozer cython==0.29.33 setuptools appdirs packaging colorama jinja2 six toml sh build wheel
 
-      - name: Build, Sign and Optimize
+      - name: Build and Sign AAB
         run: |
-          # 1. CRIAR A CHAVE OFICIAL
+          # 1. CRIAR A CHAVE (Caso ela não exista no runner)
           keytool -genkey -noprompt \
             -keystore neuralface_oficial.keystore \
             -alias neural_oficial \
@@ -42,30 +42,33 @@ jobs:
             -keysize 2048 \
             -validity 10000 \
             -dname "CN=Anderson, OU=Neural, O=Neural, L=Lages, S=SC, C=BR"
-          
-          # 2. GERAR O APK COM BUILDOZER (Mesmo que saia unsigned)
+
+          # 2. GERAR O AAB VIA BUILDOZER
+          # Forçamos as variáveis de ambiente para o buildozer tentar assinar sozinho primeiro
+          APP_ANDROID_KEYSTORE=neuralface_oficial.keystore \
+          APP_ANDROID_KEYALIAS=neural_oficial \
+          APP_ANDROID_KEYSTORE_PASSWORD=neural2026 \
+          APP_ANDROID_KEYALIAS_PASSWORD=neural2026 \
           yes | buildozer -v android release
-          
-          # 3. LOCALIZAR O ARQUIVO GERADO
-          APK_UNSIGNED=$(ls bin/*unsigned.apk | head -n 1)
-          echo "Arquivo encontrado: $APK_UNSIGNED"
 
-          # 4. ZIPALIGN (Otimização obrigatória para evitar 'Erro de Pacote')
-          # O caminho do build-tools pode variar, por isso usamos o comando direto
-          /usr/local/lib/android/sdk/build-tools/34.0.0/zipalign -v 4 $APK_UNSIGNED bin/NeuralFace_Alinhado.apk
+          # 3. LOCALIZAR O AAB GERADO (Geralmente na pasta bin)
+          AAB_UNSIGNED=$(ls bin/*.aab | head -n 1)
+          echo "Arquivo encontrado: $AAB_UNSIGNED"
 
-          # 5. APKSIGNER (Assinatura Oficial V2/V3)
+          # 4. ZIPALIGN (Otimização obrigatória)
+          /usr/local/lib/android/sdk/build-tools/34.0.0/zipalign -v 4 $AAB_UNSIGNED bin/NeuralFace_Alinhado.aab
+
+          # 5. APKSIGNER (Assinatura Oficial V2/V3 no AAB)
           /usr/local/lib/android/sdk/build-tools/34.0.0/apksigner sign --ks neuralface_oficial.keystore \
             --ks-pass pass:neural2026 \
             --ks-key-alias neural_oficial \
             --key-pass pass:neural2026 \
-            --out bin/NeuralFaceHD_FINAL_INSTALAVEL.apk \
-            bin/NeuralFace_Alinhado.apk
+            --out bin/NeuralFaceHD_FINAL_PLAYSTORE.aab \
+            bin/NeuralFace_Alinhado.aab
 
-          # 6. ORGANIZAÇÃO
+          # 6. LIMPEZA E CÓPIA DA CHAVE
           cp neuralface_oficial.keystore bin/
-          # Remove arquivos temporários para não confundir
-          rm bin/NeuralFace_Alinhado.apk
+          rm bin/NeuralFace_Alinhado.aab
         env:
           ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
 
@@ -73,6 +76,6 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: NeuralFaceHD-PROJETO-FINAL
+          name: NeuralFaceHD-AAB-PLAYSTORE
           path: bin/
       
