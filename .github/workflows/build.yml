@@ -30,7 +30,7 @@ jobs:
           pip install --upgrade pip
           pip install buildozer cython==0.29.33 setuptools appdirs packaging colorama jinja2 six toml sh build wheel
 
-      - name: Build and Manual Sign
+      - name: Build, Sign and Optimize
         run: |
           # 1. CRIAR A CHAVE OFICIAL
           keytool -genkey -noprompt \
@@ -43,24 +43,29 @@ jobs:
             -validity 10000 \
             -dname "CN=Anderson, OU=Neural, O=Neural, L=Lages, S=SC, C=BR"
           
-          # 2. GERAR O APK (Mesmo que saia unsigned, vamos resolver no passo 3)
+          # 2. GERAR O APK COM BUILDOZER (Mesmo que saia unsigned)
           yes | buildozer -v android release
           
-          # 3. ASSINATURA MANUAL (O XEQUE-MATE)
-          # Localiza o arquivo gerado na pasta bin
-          APK_FILE=$(ls bin/*unsigned.apk | head -n 1)
-          echo "Assinando manualmente o arquivo: $APK_FILE"
-          
-          jarsigner -verbose -sigalg SHA256withRSA -digestalg SHA256 \
-            -keystore neuralface_oficial.keystore \
-            -storepass neural2026 \
-            -keypass neural2026 \
-            $APK_FILE neural_oficial
+          # 3. LOCALIZAR O ARQUIVO GERADO
+          APK_UNSIGNED=$(ls bin/*unsigned.apk | head -n 1)
+          echo "Arquivo encontrado: $APK_UNSIGNED"
 
-          # 4. ORGANIZAÇÃO FINAL
-          # Criamos um arquivo com nome claro para você não ter dúvida
-          cp $APK_FILE bin/NeuralFaceHD_PRONTO_PARA_TESTE.apk
+          # 4. ZIPALIGN (Otimização obrigatória para evitar 'Erro de Pacote')
+          # O caminho do build-tools pode variar, por isso usamos o comando direto
+          /usr/local/lib/android/sdk/build-tools/34.0.0/zipalign -v 4 $APK_UNSIGNED bin/NeuralFace_Alinhado.apk
+
+          # 5. APKSIGNER (Assinatura Oficial V2/V3)
+          /usr/local/lib/android/sdk/build-tools/34.0.0/apksigner sign --ks neuralface_oficial.keystore \
+            --ks-pass pass:neural2026 \
+            --ks-key-alias neural_oficial \
+            --key-pass pass:neural2026 \
+            --out bin/NeuralFaceHD_FINAL_INSTALAVEL.apk \
+            bin/NeuralFace_Alinhado.apk
+
+          # 6. ORGANIZAÇÃO
           cp neuralface_oficial.keystore bin/
+          # Remove arquivos temporários para não confundir
+          rm bin/NeuralFace_Alinhado.apk
         env:
           ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
 
