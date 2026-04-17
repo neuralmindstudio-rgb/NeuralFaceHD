@@ -1,4 +1,4 @@
-name: Build APK Oficial
+name: Build APK Oficial Assinado
 
 on:
   push:
@@ -28,36 +28,38 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y build-essential libffi-dev python3-dev
           pip install --upgrade pip
-          pip install buildozer cython==0.29.33 setuptools
+          pip install buildozer cython==0.29.33 setuptools appdirs packaging colorama jinja2 six toml sh build wheel
 
       - name: Build with Buildozer
         run: |
-          # 🔥 PASSO MESTRE: Criar a chave automaticamente se ela não estiver lá
-          if [ ! -f "neuralface_oficial.keystore" ]; then
-            echo "Criando nova chave..."
-            keytool -genkey -noprompt \
-              -keystore neuralface_oficial.keystore \
-              -alias neural_oficial \
-              -storepass neural2026 \
-              -keypass neural2026 \
-              -keyalg RSA \
-              -keysize 2048 \
-              -validity 10000 \
-              -dname "CN=Anderson, OU=Neural, O=Neural, L=Lages, S=SC, C=BR"
-          fi
+          # 1. CRIAR A NOVA CHAVE OFICIAL
+          keytool -genkey -noprompt \
+            -keystore neuralface_oficial.keystore \
+            -alias neural_oficial \
+            -storepass neural2026 \
+            -keypass neural2026 \
+            -keyalg RSA \
+            -keysize 2048 \
+            -validity 10000 \
+            -dname "CN=Anderson, OU=Neural, O=Neural, L=Lages, S=SC, C=BR"
           
-          # Gera o APK assinado
+          # 2. MOVER A CHAVE PARA A PASTA BIN (PARA VOCÊ PODER BAIXAR E GUARDAR)
+          mkdir -p bin
+          cp neuralface_oficial.keystore bin/
+          
+          # 3. GERAR O APK ASSINADO
           yes | buildozer -v android release
         env:
           APP_ANDROID_KEYSTORE: neuralface_oficial.keystore
           APP_ANDROID_KEYALIAS: neural_oficial
           APP_ANDROID_KEYSTORE_PASSWORD: neural2026
           APP_ANDROID_KEYALIAS_PASSWORD: neural2026
+          ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
 
       - name: Upload Artifact
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: NeuralFaceHD-APK-ASSINADO
+          name: NeuralFaceHD-PROJETO-FINAL
           path: bin/
       
