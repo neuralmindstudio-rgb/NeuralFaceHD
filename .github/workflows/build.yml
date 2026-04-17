@@ -32,7 +32,7 @@ jobs:
 
       - name: Build and Sign AAB
         run: |
-          # 1. CRIAR A CHAVE (Caso ela não exista no runner)
+          # 1. CRIAR A CHAVE OFICIAL
           keytool -genkey -noprompt \
             -keystore neuralface_oficial.keystore \
             -alias neural_oficial \
@@ -43,32 +43,21 @@ jobs:
             -validity 10000 \
             -dname "CN=Anderson, OU=Neural, O=Neural, L=Lages, S=SC, C=BR"
 
-          # 2. GERAR O AAB VIA BUILDOZER
-          # Forçamos as variáveis de ambiente para o buildozer tentar assinar sozinho primeiro
-          APP_ANDROID_KEYSTORE=neuralface_oficial.keystore \
-          APP_ANDROID_KEYALIAS=neural_oficial \
-          APP_ANDROID_KEYSTORE_PASSWORD=neural2026 \
-          APP_ANDROID_KEYALIAS_PASSWORD=neural2026 \
+          # 2. GERAR O AAB (O Buildozer assina automaticamente Bundles no modo release)
+          # Usamos o export para garantir que o processo filho do Android SDK enxergue as senhas
+          export APP_ANDROID_KEYSTORE=neuralface_oficial.keystore
+          export APP_ANDROID_KEYALIAS=neural_oficial
+          export APP_ANDROID_KEYSTORE_PASSWORD=neural2026
+          export APP_ANDROID_KEYALIAS_PASSWORD=neural2026
+          
           yes | buildozer -v android release
 
-          # 3. LOCALIZAR O AAB GERADO (Geralmente na pasta bin)
-          AAB_UNSIGNED=$(ls bin/*.aab | head -n 1)
-          echo "Arquivo encontrado: $AAB_UNSIGNED"
-
-          # 4. ZIPALIGN (Otimização obrigatória)
-          /usr/local/lib/android/sdk/build-tools/34.0.0/zipalign -v 4 $AAB_UNSIGNED bin/NeuralFace_Alinhado.aab
-
-          # 5. APKSIGNER (Assinatura Oficial V2/V3 no AAB)
-          /usr/local/lib/android/sdk/build-tools/34.0.0/apksigner sign --ks neuralface_oficial.keystore \
-            --ks-pass pass:neural2026 \
-            --ks-key-alias neural_oficial \
-            --key-pass pass:neural2026 \
-            --out bin/NeuralFaceHD_FINAL_PLAYSTORE.aab \
-            bin/NeuralFace_Alinhado.aab
-
-          # 6. LIMPEZA E CÓPIA DA CHAVE
-          cp neuralface_oficial.keystore bin/
-          rm bin/NeuralFace_Alinhado.aab
+          # 3. ORGANIZAR OS ARQUIVOS FINAIS
+          mkdir -p bin_entrega
+          # Copia o AAB assinado (o Buildozer gera ele sem o "unsigned" no nome se a senha estiver certa)
+          cp bin/*.aab bin_entrega/NeuralFaceHD_FINAL_PLAYSTORE.aab
+          # Copia a sua chave mestra para você baixar e guardar
+          cp neuralface_oficial.keystore bin_entrega/
         env:
           ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
 
@@ -77,5 +66,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: NeuralFaceHD-AAB-PLAYSTORE
-          path: bin/
+          path: bin_entrega/
       
