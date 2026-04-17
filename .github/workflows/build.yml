@@ -33,28 +33,29 @@ jobs:
       - name: Build with Buildozer
         run: |
           # 1. CRIAR A NOVA CHAVE OFICIAL (NA RAIZ)
-          keytool -genkey -noprompt \
-            -keystore neuralface_oficial.keystore \
-            -alias neural_oficial \
-            -storepass neural2026 \
-            -keypass neural2026 \
-            -keyalg RSA \
-            -keysize 2048 \
-            -validity 10000 \
-            -dname "CN=Anderson, OU=Neural, O=Neural, L=Lages, S=SC, C=BR"
+          if [ ! -f "neuralface_oficial.keystore" ]; then
+            keytool -genkey -noprompt \
+              -keystore neuralface_oficial.keystore \
+              -alias neural_oficial \
+              -storepass neural2026 \
+              -keypass neural2026 \
+              -keyalg RSA \
+              -keysize 2048 \
+              -validity 10000 \
+              -dname "CN=Anderson, OU=Neural, O=Neural, L=Lages, S=SC, C=BR"
+          fi
           
-          # 2. EXPORTAR AS VARIÁVEIS PARA O AMBIENTE DO SHELL (FORÇA A ASSINATURA)
-          export APP_ANDROID_KEYSTORE=neuralface_oficial.keystore
-          export APP_ANDROID_KEYALIAS=neural_oficial
-          export APP_ANDROID_KEYSTORE_PASSWORD=neural2026
-          export APP_ANDROID_KEYALIAS_PASSWORD=neural2026
-          
-          # 3. GERAR O APK ASSINADO
-          # O comando release usa as variáveis exportadas acima
+          # 2. GERAR O APK ASSINADO
+          # Passamos as variáveis na mesma linha do comando para forçar a assinatura
+          APP_ANDROID_KEYSTORE=neuralface_oficial.keystore \
+          APP_ANDROID_KEYALIAS=neural_oficial \
+          APP_ANDROID_KEYSTORE_PASSWORD=neural2026 \
+          APP_ANDROID_KEYALIAS_PASSWORD=neural2026 \
           yes | buildozer -v android release
           
-          # 4. PREPARAR ARQUIVOS PARA DOWNLOAD
+          # 3. PREPARAR ARQUIVOS PARA DOWNLOAD
           mkdir -p bin
+          # Copia a chave gerada para você baixar e guardar
           cp neuralface_oficial.keystore bin/
         env:
           ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
