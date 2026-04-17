@@ -4,6 +4,7 @@ import shutil
 import time
 import threading
 import socket
+import gc  # 🔥 Essencial para evitar o erro da foto 30
 from datetime import datetime
 
 from kivy.metrics import dp
@@ -353,13 +354,13 @@ class TelaPrincipal(Screen):
         intent.addFlags(Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION)
         currentActivity.startActivityForResult(intent, self.PICK_IMAGE_REQUEST)
 
+    # 🔥 CORREÇÃO 1: Fim do erro (invalid)
     def abrir_salvar_android(self):
         PythonActivity = autoclass('org.kivy.android.PythonActivity')
         Intent = autoclass('android.content.Intent')
         currentActivity = PythonActivity.mActivity
         
-        # 🔥 CORREÇÃO: Nome dinâmico com timestamp para evitar conflitos
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        timestamp = datetime.now().strftime("%d%m%Y_%H%M%S")
         nome_sugerido = f"NFHD_{timestamp}.jpg"
 
         intent = Intent(Intent.ACTION_CREATE_DOCUMENT)
@@ -422,6 +423,7 @@ class TelaPrincipal(Screen):
             print(f"Erro copiar URI para arquivo: {e}")
             return ""
 
+    # 🔥 CORREÇÃO 2: Limpeza de memória para foto 30+
     def salvar_em_uri(self, uri):
         try:
             if not self.arquivo_gerado_agora or not os.path.exists(self.arquivo_gerado_agora):
@@ -431,8 +433,7 @@ class TelaPrincipal(Screen):
             currentActivity = PythonActivity.mActivity
             resolver = currentActivity.getContentResolver()
 
-            # 🔥 CORREÇÃO: Uso de copyfileobj e sync para garantir escrita física no Android
-            stream = resolver.openOutputStream(uri, "w")
+            stream = resolver.openOutputStream(uri)
             if stream is None:
                 return False
 
@@ -440,16 +441,21 @@ class TelaPrincipal(Screen):
                 shutil.copyfileobj(origem, stream)
 
             stream.flush()
-            # Força o sistema a sincronizar o arquivo
-            pfd = resolver.openFileDescriptor(uri, "rw")
-            fd_desc = pfd.getFileDescriptor()
-            fd_desc.sync()
-            pfd.close()
             stream.close()
 
-            # Limpa caches para liberar memória
+            # Sincronização de arquivo
+            try:
+                pfd = resolver.openFileDescriptor(uri, "rw")
+                fd_desc = pfd.getFileDescriptor()
+                fd_desc.sync()
+                pfd.close()
+            except:
+                pass
+
+            # Liberação de memória crítica
             Cache.remove('kv.image')
             Cache.remove('kv.texture')
+            gc.collect() 
             return True
 
         except Exception as e:
@@ -577,6 +583,7 @@ class TelaPrincipal(Screen):
         self.btn_limpar.disabled = not estado
         self.btn_rec.disabled = not estado
 
+    # 🔥 CORREÇÃO 3: Gerenciamento de arquivos temporários
     def processo_servidor(self):
         tentativas_maximas = 8
         tentativa_atual = 0
@@ -586,12 +593,14 @@ class TelaPrincipal(Screen):
                 tentativa_atual += 1
                 if not bd or not bd.local_id:
                     raise Exception("Usuário não autenticado")
+                
                 pasta_app = App.get_running_app().user_data_dir
-                # 🔥 CORREÇÃO: Nome de arquivo temporário dinâmico
-                nome_unico = os.path.join(pasta_app, f"temp_res_{int(time.time())}.jpg")
+                nome_temporario = os.path.join(pasta_app, "ia_temp_result.jpg")
+                
                 payload = {'face_index': str(self.face_index)}
                 combinacao_atual = f"{self.path_base}_{self.path_rosto}"
                 deve_cobrar = combinacao_atual != self.ultima_combinacao
+                
                 with open(self.path_base, 'rb') as fb, open(self.path_rosto, 'rb') as fr:
                     res = self.session.post(
                         self.url_swap,
@@ -600,15 +609,15 @@ class TelaPrincipal(Screen):
                         timeout=45
                     )
                     if res.status_code == 200:
-                        with open(nome_unico, "wb") as f:
+                        with open(nome_temporario, "wb") as f:
                             f.write(res.content)
-                        self.arquivo_gerado_agora = nome_unico
+                        self.arquivo_gerado_agora = nome_temporario
                         if deve_cobrar:
                             try:
                                 ok = bd.atualizar_creditos(self.creditos_atuais - 1)
                                 if ok:
                                     self.ultima_combinacao = combinacao_atual
-                            except Exception:
+                            except:
                                 pass
                         sucesso_ia = True
                         Clock.schedule_once(lambda dt: self.sucesso())
