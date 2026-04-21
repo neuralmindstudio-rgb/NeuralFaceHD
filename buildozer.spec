@@ -1,7 +1,7 @@
 [app]
 # Nome e Identidade
 title = Neural Face HD
-package.name = neuralfacehdpro
+package.name = neuralfacepro
 package.domain = com.neuralmindstudio
 source.dir = .
 source.include_exts = py,png,jpg,kv,atlas,json,onnx,keystore,ttf
