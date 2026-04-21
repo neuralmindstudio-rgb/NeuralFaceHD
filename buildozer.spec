@@ -15,9 +15,9 @@ fullscreen = 0
 
 # Requisitos do Android para a Play Store
 android.permissions = INTERNET, CAMERA, READ_EXTERNAL_STORAGE, WRITE_EXTERNAL_STORAGE, READ_MEDIA_IMAGES, ACCESS_NETWORK_STATE
-android.api = 34
+android.api = 35
 android.minapi = 21
-android.sdk = 34
+android.sdk = 35
 android.ndk = 25b
 # 🔥 Ajustado para 64 bits apenas, para garantir que o build termine com sucesso
 android.archs = arm64-v8a
