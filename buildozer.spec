@@ -1,15 +1,15 @@
 [app]
 # Nome e Identidade
 title = Neural Face HD
-package.name = neuralfacehd
+package.name = neuralfacehdpro
 package.domain = com.neuralmindstudio
 source.dir = .
 source.include_exts = py,png,jpg,kv,atlas,json,onnx,keystore,ttf
 source.include_patterns = assets/*, gfpgan/*, *.onnx, images/*
 
 # VERSÃO OFICIAL DE LANÇAMENTO
-version = 1.0.1
-android.numeric_version = 2
+version = 1.0.0
+android.numeric_version = 1
 orientation = portrait
 fullscreen = 0
 
