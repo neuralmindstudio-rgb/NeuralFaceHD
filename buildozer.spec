@@ -2,7 +2,7 @@
 # Nome e Identidade
 title = Neural Face HD
 package.name = neuralfacehd
-package.domain = br.com.neuralmindstudio
+package.domain = com.neuralmindstudio
 source.dir = .
 source.include_exts = py,png,jpg,kv,atlas,json,onnx,keystore,ttf
 source.include_patterns = assets/*, gfpgan/*, *.onnx, images/*
