@@ -119,7 +119,7 @@ class TelaPrincipal(Screen):
 
         layout_geral = FloatLayout()
 
-        # --- BARRA SUPERIOR (Padding para Notch/Relógio) ---
+        # --- BARRA SUPERIOR ---
         self.barra_t = BoxLayout(
             size_hint=(1, None),
             height=dp(80),
@@ -143,13 +143,13 @@ class TelaPrincipal(Screen):
         self.barra_t.add_widget(self.lbl_rede)
         self.barra_t.add_widget(self.btn_mais)
 
-        # --- ÁREA CENTRAL ---
+        # --- ÁREA CENTRAL (AMPLIADA E SUBIDA) ---
         self.meio = MDBoxLayout(
             orientation='vertical',
-            size_hint=(0.98, 0.58),
-            pos_hint={'center_x': 0.5, 'center_y': 0.52},
+            size_hint=(0.98, 0.68), # Aumentado para ocupar mais espaço vertical
+            pos_hint={'center_x': 0.5, 'center_y': 0.58}, # Subido para equilibrar com o topo
             md_bg_color=(0, 0, 0, 0),
-            padding=dp(10)
+            padding=dp(2) # Padding reduzido para a foto preencher melhor o quadro
         )
         with self.meio.canvas.before:
             Color(*self.cor_roxo_destaque)
@@ -164,14 +164,14 @@ class TelaPrincipal(Screen):
         self.meio.add_widget(self.area_foto)
         self.meio.add_widget(self.barra_p)
 
-        # --- PAINEL INFERIOR ---
+        # --- PAINEL INFERIOR (COMPACTADO PARA DAR ESPAÇO) ---
         self.painel = BoxLayout(
             orientation='vertical',
             size_hint=(1, None),
-            height=dp(185),
-            padding=[dp(10), dp(5), dp(10), dp(5)],
+            height=dp(175), # Altura reduzida para priorizar a área da foto
+            padding=[dp(10), dp(2), dp(10), dp(5)],
             spacing=dp(5),
-            pos_hint={'x': 0, 'y': 0}
+            pos_hint={'x': 0, 'y': 0.01}
         )
 
         self.label_s = Label(text="Neural Face HD", color=(0.5, 0.5, 0.6, 1), font_size='11sp', size_hint_y=None, height=dp(18))
@@ -204,7 +204,6 @@ class TelaPrincipal(Screen):
         self.painel.add_widget(self.btn_idx)
         self.painel.add_widget(l2)
         
-        # --- CALÇO INTELIGENTE (ADAPTÁVEL) ---
         self.espacador_android = Widget(size_hint_y=None, height=0)
         self.painel.add_widget(self.espacador_android)
 
@@ -213,7 +212,6 @@ class TelaPrincipal(Screen):
         layout_geral.add_widget(self.painel)
         self.add_widget(layout_geral)
 
-        # Ajuste dinâmico após carregar a UI
         Clock.schedule_once(self.ajustar_espaco_sistema, 1)
 
         menu_items = [{"viewclass": "OneLineListItem", "text": "Termos de Uso", "on_release": lambda x="Termos": self.menu_callback(x)},
@@ -221,7 +219,6 @@ class TelaPrincipal(Screen):
         self.dropdown = MDDropdownMenu(caller=self.btn_mais, items=menu_items, width_mult=4)
 
     def ajustar_espaco_sistema(self, *args):
-        """ Detecta o tamanho da barra de navegação Android e ajusta a UI """
         if not ANDROID_OK: return
         try:
             PythonActivity = autoclass('org.kivy.android.PythonActivity')
@@ -255,7 +252,7 @@ class TelaPrincipal(Screen):
         except: pass
 
     def salvar_em_uri(self, uri):
-        """ 🔥 CORREÇÃO DEFINITIVA: Salvamento Direto e Liberação de Memória """
+        """ 🔥 VERSÃO ANTI-TRAVAMENTO 2.0: Resolve Foto 30 e Nome Inválido """
         try:
             if not self.arquivo_gerado_agora or not os.path.exists(self.arquivo_gerado_agora):
                 return False
@@ -264,14 +261,14 @@ class TelaPrincipal(Screen):
             currentActivity = PythonActivity.mActivity
             resolver = currentActivity.getContentResolver()
 
-            # Escrita direta no Stream do Android
-            stream = resolver.openOutputStream(uri)
+            # Força o modo 'wt' (write-truncate) para evitar arquivos corrompidos
+            stream = resolver.openOutputStream(uri, "wt")
             if stream is None: return False
 
             with open(self.arquivo_gerado_agora, "rb") as origem:
                 shutil.copyfileobj(origem, stream)
 
-            # Força o fechamento e a gravação física (Sync)
+            # Sincronização e Fechamento Rígido
             stream.flush()
             stream.close()
 
@@ -282,16 +279,21 @@ class TelaPrincipal(Screen):
                 pfd.close()
             except: pass
 
-            # 🔥 LIBERAÇÃO CRÍTICA DE RAM (Erro da foto 30)
+            # 🔥 LIBERAÇÃO AGRESSIVA DE RAM
             Cache.remove('kv.image')
             Cache.remove('kv.texture')
             gc.collect() 
             
-            print("Salvamento concluído e cache limpo.")
+            # Reset visual temporário para forçar o Kivy a soltar o arquivo antigo
+            orig_source = self.img_preview.source
+            self.img_preview.source = ""
+            self.img_preview.source = orig_source
+            
+            print("Salvamento concluído com limpeza de sistema.")
             return True
 
         except Exception as e:
             print(f"Erro no salvamento: {e}")
             return False
 
-    # ... (Mantenha o restante das funções como estão)
+    # ... (Mantenha o restante das funções abaixo)
