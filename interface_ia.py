@@ -15,7 +15,7 @@ from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.screenmanager import Screen
 from kivy.uix.scrollview import ScrollView
-from kivy.uix.widget import Widget # Importado para o espaçador
+from kivy.uix.widget import Widget 
 from kivy.cache import Cache
 from kivy.graphics import Color, RoundedRectangle
 from kivy.utils import get_color_from_hex
@@ -119,7 +119,7 @@ class TelaPrincipal(Screen):
 
         layout_geral = FloatLayout()
 
-        # --- BARRA SUPERIOR ---
+        # --- BARRA SUPERIOR (Padding para Notch/Relógio) ---
         self.barra_t = BoxLayout(
             size_hint=(1, None),
             height=dp(80),
@@ -128,33 +128,14 @@ class TelaPrincipal(Screen):
             pos_hint={'top': 1}
         )
 
-        self.btn_sair = MDRectangleFlatButton(
-            text="LOGOUT",
-            theme_text_color="Custom",
-            text_color=(1, 0, 0, 1),
-            line_color=(1, 0, 0, 1)
-        )
+        self.btn_sair = MDRectangleFlatButton(text="LOGOUT", theme_text_color="Custom", text_color=(1, 0, 0, 1), line_color=(1, 0, 0, 1))
         self.btn_sair.bind(on_release=self.fazer_logout)
 
-        self.btn_salvar = MDRoundFlatIconButton(
-            text="SALVAR",
-            icon="download",
-            disabled=True
-        )
+        self.btn_salvar = MDRoundFlatIconButton(text="SALVAR", icon="download", disabled=True)
         self.btn_salvar.bind(on_release=self.abrir_menu_salvamento)
 
-        self.lbl_rede = Label(
-            text="OFFLINE",
-            color=(1, 0, 0, 1),
-            font_size='9sp',
-            bold=True
-        )
-
-        self.btn_mais = MDIconButton(
-            icon="dots-vertical",
-            theme_text_color="Custom",
-            text_color=(1, 1, 1, 1)
-        )
+        self.lbl_rede = Label(text="OFFLINE", color=(1, 0, 0, 1), font_size='9sp', bold=True)
+        self.btn_mais = MDIconButton(icon="dots-vertical", theme_text_color="Custom", text_color=(1, 1, 1, 1))
         self.btn_mais.bind(on_release=self.abrir_menu)
 
         self.barra_t.add_widget(self.btn_sair)
@@ -172,90 +153,46 @@ class TelaPrincipal(Screen):
         )
         with self.meio.canvas.before:
             Color(*self.cor_roxo_destaque)
-            self.rect_meio = RoundedRectangle(
-                pos=self.meio.pos,
-                size=self.meio.size,
-                radius=[dp(25)]
-            )
+            self.rect_meio = RoundedRectangle(pos=self.meio.pos, size=self.meio.size, radius=[dp(25)])
         self.meio.bind(pos=self.update_rect_meio, size=self.update_rect_meio)
 
         self.area_foto = BoxLayout()
         self.img_preview = Image(source='', opacity=0)
         self.area_foto.add_widget(self.img_preview)
 
-        self.barra_p = MDProgressBar(
-            type="indeterminate",
-            size_hint_y=None,
-            height=dp(3),
-            opacity=0,
-            color=self.cor_verde_status,
-            running_duration=0.3
-        )
+        self.barra_p = MDProgressBar(type="indeterminate", size_hint_y=None, height=dp(3), opacity=0, color=self.cor_verde_status, running_duration=0.3)
         self.meio.add_widget(self.area_foto)
         self.meio.add_widget(self.barra_p)
 
-        # --- PAINEL INFERIOR (COM ESPAÇADOR DE SEGURANÇA) ---
+        # --- PAINEL INFERIOR ---
         self.painel = BoxLayout(
             orientation='vertical',
             size_hint=(1, None),
-            height=dp(230), # Altura total maior para acomodar o espaçador
-            padding=[dp(10), dp(5), dp(10), dp(10)],
+            height=dp(185),
+            padding=[dp(10), dp(5), dp(10), dp(5)],
             spacing=dp(5),
             pos_hint={'x': 0, 'y': 0}
         )
 
-        self.label_s = Label(
-            text="Neural Face HD",
-            color=(0.5, 0.5, 0.6, 1),
-            font_size='11sp',
-            size_hint_y=None,
-            height=dp(18)
-        )
+        self.label_s = Label(text="Neural Face HD", color=(0.5, 0.5, 0.6, 1), font_size='11sp', size_hint_y=None, height=dp(18))
 
         l1 = BoxLayout(spacing=dp(10), size_hint_y=None, height=dp(44))
-        self.btn_b = MDRoundFlatIconButton(
-            text="BASE",
-            icon="image-plus",
-            size_hint_x=0.5
-        )
+        self.btn_b = MDRoundFlatIconButton(text="BASE", icon="image-plus", size_hint_x=0.5)
         self.btn_b.bind(on_release=lambda x: self.abrir_seletor_nativo("base"))
-
-        self.btn_r = MDRoundFlatIconButton(
-            text="ROSTO",
-            icon="face-man-profile",
-            size_hint_x=0.5
-        )
+        self.btn_r = MDRoundFlatIconButton(text="ROSTO", icon="face-man-profile", size_hint_x=0.5)
         self.btn_r.bind(on_release=lambda x: self.abrir_seletor_nativo("rosto"))
-
         l1.add_widget(self.btn_b)
         l1.add_widget(self.btn_r)
 
-        self.btn_idx = MDRoundFlatIconButton(
-            text="TROCAR ROSTO (0)",
-            icon="account-switch",
-            size_hint_x=1,
-            height=dp(40)
-        )
+        self.btn_idx = MDRoundFlatIconButton(text="TROCAR ROSTO (0)", icon="account-switch", size_hint_x=1, height=dp(40))
         self.btn_idx.bind(on_release=self.alternar_rosto)
 
         l2 = BoxLayout(spacing=dp(8), size_hint_y=None, height=dp(50))
         self.btn_limpar = MDRectangleFlatButton(text="LIMPAR", size_hint_x=0.25)
         self.btn_limpar.bind(on_release=self.limpar_tudo)
-
-        self.btn_gerar = MDFillRoundFlatButton(
-            text="GERAR",
-            md_bg_color=(0.5, 0, 0.8, 1),
-            size_hint_x=0.45
-        )
+        self.btn_gerar = MDFillRoundFlatButton(text="GERAR", md_bg_color=(0.5, 0, 0.8, 1), size_hint_x=0.45)
         self.btn_gerar.bind(on_release=self.enviar_ao_pc)
-
-        self.btn_rec = MDRectangleFlatButton(
-            text="+ CRÉDITOS",
-            size_hint_x=0.3,
-            theme_text_color="Custom",
-            text_color=(0, 0.8, 0, 1),
-            line_color=(0, 0.8, 0, 1)
-        )
+        self.btn_rec = MDRectangleFlatButton(text="+ CRÉDITOS", size_hint_x=0.3, theme_text_color="Custom", text_color=(0, 0.8, 0, 1), line_color=(0, 0.8, 0, 1))
         self.btn_rec.bind(on_release=self.abrir_loja)
 
         l2.add_widget(self.btn_limpar)
@@ -267,58 +204,94 @@ class TelaPrincipal(Screen):
         self.painel.add_widget(self.btn_idx)
         self.painel.add_widget(l2)
         
-        # --- CALÇO DE SEGURANÇA PARA BOTÕES ANDROID ---
-        espacador_android = Widget(size_hint_y=None, height=dp(45))
-        self.painel.add_widget(espacador_android)
+        # --- CALÇO INTELIGENTE (ADAPTÁVEL) ---
+        self.espacador_android = Widget(size_hint_y=None, height=0)
+        self.painel.add_widget(self.espacador_android)
 
         layout_geral.add_widget(self.barra_t)
         layout_geral.add_widget(self.meio)
         layout_geral.add_widget(self.painel)
         self.add_widget(layout_geral)
 
-        menu_items = [
-            {
-                "viewclass": "OneLineListItem",
-                "text": "Termos de Uso",
-                "on_release": lambda x="Termos": self.menu_callback(x)
-            },
-            {
-                "viewclass": "OneLineListItem",
-                "text": "Sobre",
-                "on_release": lambda x="Sobre": self.menu_callback(x)
-            },
-        ]
-        self.dropdown = MDDropdownMenu(
-            caller=self.btn_mais,
-            items=menu_items,
-            width_mult=4
-        )
+        # Ajuste dinâmico após carregar a UI
+        Clock.schedule_once(self.ajustar_espaco_sistema, 1)
+
+        menu_items = [{"viewclass": "OneLineListItem", "text": "Termos de Uso", "on_release": lambda x="Termos": self.menu_callback(x)},
+                      {"viewclass": "OneLineListItem", "text": "Sobre", "on_release": lambda x="Sobre": self.menu_callback(x)}]
+        self.dropdown = MDDropdownMenu(caller=self.btn_mais, items=menu_items, width_mult=4)
+
+    def ajustar_espaco_sistema(self, *args):
+        """ Detecta o tamanho da barra de navegação Android e ajusta a UI """
+        if not ANDROID_OK: return
+        try:
+            PythonActivity = autoclass('org.kivy.android.PythonActivity')
+            decor_view = PythonActivity.mActivity.getWindow().getDecorView()
+            insets = decor_view.getRootWindowInsets()
+            if insets:
+                bottom_inset = insets.getSystemWindowInsetBottom()
+                padding_dp = bottom_inset / Window.density
+                if padding_dp > 0:
+                    self.espacador_android.height = dp(padding_dp)
+                    self.painel.height += dp(padding_dp)
+        except: pass
 
     def mostrar_barras_android(self, *args):
-        if not ANDROID_OK:
-            return
+        if not ANDROID_OK: return
         try:
             PythonActivity = autoclass('org.kivy.android.PythonActivity')
             View = autoclass('android.view.View')
             LayoutParams = autoclass('android.view.WindowManager$LayoutParams')
             currentActivity = PythonActivity.mActivity
-
             def _mostrar():
                 try:
                     window = currentActivity.getWindow()
                     decor = window.getDecorView()
                     window.clearFlags(LayoutParams.FLAG_FULLSCREEN)
                     decor.setSystemUiVisibility(View.SYSTEM_UI_FLAG_VISIBLE)
-                    # Força o redimensionamento para respeitar o layout
                     window.setSoftInputMode(LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
-                except Exception as e:
-                    print(f"Erro mostrar barras Android: {e}")
+                except: pass
+            if run_on_ui_thread: run_on_ui_thread(_mostrar)()
+            else: _mostrar()
+        except: pass
 
-            if run_on_ui_thread:
-                run_on_ui_thread(_mostrar)()
-            else:
-                _mostrar()
+    def salvar_em_uri(self, uri):
+        """ 🔥 CORREÇÃO DEFINITIVA: Salvamento Direto e Liberação de Memória """
+        try:
+            if not self.arquivo_gerado_agora or not os.path.exists(self.arquivo_gerado_agora):
+                return False
+
+            PythonActivity = autoclass('org.kivy.android.PythonActivity')
+            currentActivity = PythonActivity.mActivity
+            resolver = currentActivity.getContentResolver()
+
+            # Escrita direta no Stream do Android
+            stream = resolver.openOutputStream(uri)
+            if stream is None: return False
+
+            with open(self.arquivo_gerado_agora, "rb") as origem:
+                shutil.copyfileobj(origem, stream)
+
+            # Força o fechamento e a gravação física (Sync)
+            stream.flush()
+            stream.close()
+
+            try:
+                pfd = resolver.openFileDescriptor(uri, "rw")
+                fd_desc = pfd.getFileDescriptor()
+                fd_desc.sync() 
+                pfd.close()
+            except: pass
+
+            # 🔥 LIBERAÇÃO CRÍTICA DE RAM (Erro da foto 30)
+            Cache.remove('kv.image')
+            Cache.remove('kv.texture')
+            gc.collect() 
+            
+            print("Salvamento concluído e cache limpo.")
+            return True
+
         except Exception as e:
-            print(f"Erro preparar barras Android: {e}")
+            print(f"Erro no salvamento: {e}")
+            return False
 
-    # ... (Mantenha o restante das funções exatamente como estão abaixo)
+    # ... (Mantenha o restante das funções como estão)
