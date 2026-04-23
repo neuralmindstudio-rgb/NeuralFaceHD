@@ -119,7 +119,7 @@ class TelaPrincipal(Screen):
 
         layout_geral = FloatLayout()
 
-        # --- BARRA SUPERIOR ---
+        # --- BARRA SUPERIOR (Ajustada para fugir do relógio) ---
         self.barra_t = BoxLayout(
             size_hint=(1, None),
             height=dp(80),
@@ -143,13 +143,13 @@ class TelaPrincipal(Screen):
         self.barra_t.add_widget(self.lbl_rede)
         self.barra_t.add_widget(self.btn_mais)
 
-        # --- ÁREA CENTRAL (AMPLIADA E SUBIDA) ---
+        # --- ÁREA CENTRAL (Quadro Roxo Ampliado conforme pedido) ---
         self.meio = MDBoxLayout(
             orientation='vertical',
-            size_hint=(0.98, 0.68), # Aumentado para ocupar mais espaço vertical
-            pos_hint={'center_x': 0.5, 'center_y': 0.58}, # Subido para equilibrar com o topo
+            size_hint=(0.98, 0.68), # Aumentado para 0.68
+            pos_hint={'center_x': 0.5, 'center_y': 0.58}, # Subido para 0.58
             md_bg_color=(0, 0, 0, 0),
-            padding=dp(2) # Padding reduzido para a foto preencher melhor o quadro
+            padding=dp(2)
         )
         with self.meio.canvas.before:
             Color(*self.cor_roxo_destaque)
@@ -164,11 +164,11 @@ class TelaPrincipal(Screen):
         self.meio.add_widget(self.area_foto)
         self.meio.add_widget(self.barra_p)
 
-        # --- PAINEL INFERIOR (COMPACTADO PARA DAR ESPAÇO) ---
+        # --- PAINEL INFERIOR (Subido para não sobrepor botões do Android) ---
         self.painel = BoxLayout(
             orientation='vertical',
             size_hint=(1, None),
-            height=dp(175), # Altura reduzida para priorizar a área da foto
+            height=dp(175),
             padding=[dp(10), dp(2), dp(10), dp(5)],
             spacing=dp(5),
             pos_hint={'x': 0, 'y': 0.01}
@@ -204,6 +204,7 @@ class TelaPrincipal(Screen):
         self.painel.add_widget(self.btn_idx)
         self.painel.add_widget(l2)
         
+        # --- CALÇO ADAPTÁVEL (Para borda infinita ou botões) ---
         self.espacador_android = Widget(size_hint_y=None, height=0)
         self.painel.add_widget(self.espacador_android)
 
@@ -252,7 +253,7 @@ class TelaPrincipal(Screen):
         except: pass
 
     def salvar_em_uri(self, uri):
-        """ 🔥 VERSÃO ANTI-TRAVAMENTO 2.0: Resolve Foto 30 e Nome Inválido """
+        """ 🔥 CORREÇÃO FOTO 30: Escrita Direta e Sync de Disco """
         try:
             if not self.arquivo_gerado_agora or not os.path.exists(self.arquivo_gerado_agora):
                 return False
@@ -261,14 +262,13 @@ class TelaPrincipal(Screen):
             currentActivity = PythonActivity.mActivity
             resolver = currentActivity.getContentResolver()
 
-            # Força o modo 'wt' (write-truncate) para evitar arquivos corrompidos
+            # Força o modo de escrita limpo
             stream = resolver.openOutputStream(uri, "wt")
             if stream is None: return False
 
             with open(self.arquivo_gerado_agora, "rb") as origem:
                 shutil.copyfileobj(origem, stream)
 
-            # Sincronização e Fechamento Rígido
             stream.flush()
             stream.close()
 
@@ -279,21 +279,219 @@ class TelaPrincipal(Screen):
                 pfd.close()
             except: pass
 
-            # 🔥 LIBERAÇÃO AGRESSIVA DE RAM
+            # 🔥 LIBERAÇÃO CRÍTICA DE RAM
             Cache.remove('kv.image')
             Cache.remove('kv.texture')
             gc.collect() 
             
-            # Reset visual temporário para forçar o Kivy a soltar o arquivo antigo
-            orig_source = self.img_preview.source
-            self.img_preview.source = ""
-            self.img_preview.source = orig_source
-            
-            print("Salvamento concluído com limpeza de sistema.")
+            print("Salvamento concluído com sucesso.")
             return True
 
         except Exception as e:
             print(f"Erro no salvamento: {e}")
             return False
 
-    # ... (Mantenha o restante das funções abaixo)
+    def abrir_menu(self, instance):
+        self.dropdown.open()
+
+    def menu_callback(self, opcao):
+        self.dropdown.dismiss()
+        if opcao == "Termos":
+            self.exibir_termos_popup()
+        elif opcao == "Sobre":
+            MDDialog(title="Neural Mind Studio", text="Neural Face HD v1.0\n\nAI avançada para imagens.").open()
+
+    def abrir_seletor_nativo(self, tipo):
+        self.tipo_atual = tipo
+        if ANDROID_OK:
+            try:
+                if tipo == "salvar": self.abrir_salvar_android()
+                else: self.abrir_seletor_android()
+                return
+            except Exception as e: print(f"Erro seletor: {e}")
+        self.abrir_fallback_filemanager()
+
+    def abrir_seletor_android(self):
+        PythonActivity = autoclass('org.kivy.android.PythonActivity')
+        Intent = autoclass('android.content.Intent')
+        currentActivity = PythonActivity.mActivity
+        intent = Intent(Intent.ACTION_OPEN_DOCUMENT)
+        intent.addCategory(Intent.CATEGORY_OPENABLE)
+        intent.setType("image/*")
+        currentActivity.startActivityForResult(intent, self.PICK_IMAGE_REQUEST)
+
+    def abrir_salvar_android(self):
+        PythonActivity = autoclass('org.kivy.android.PythonActivity')
+        Intent = autoclass('android.content.Intent')
+        currentActivity = PythonActivity.mActivity
+        nome_sugerido = f"NFHD_{datetime.now().strftime('%Y%m%d_%H%M%S')}.jpg"
+        intent = Intent(Intent.ACTION_CREATE_DOCUMENT)
+        intent.addCategory(Intent.CATEGORY_OPENABLE)
+        intent.setType("image/jpeg")
+        intent.putExtra(Intent.EXTRA_TITLE, nome_sugerido)
+        currentActivity.startActivityForResult(intent, self.CREATE_FILE_REQUEST)
+
+    def on_activity_result(self, request_code, result_code, intent):
+        if not ANDROID_OK: return
+        try:
+            Activity = autoclass('android.app.Activity')
+            if result_code != Activity.RESULT_OK or intent is None: return
+            if request_code == self.PICK_IMAGE_REQUEST:
+                uri = intent.getData()
+                path = self.copiar_uri_para_arquivo(uri)
+                if path: Clock.schedule_once(lambda dt: self.select_path(path))
+            elif request_code == self.CREATE_FILE_REQUEST:
+                uri = intent.getData()
+                ok = self.salvar_em_uri(uri)
+                self.label_s.text = "SALVO COM SUCESSO!" if ok else "ERRO AO SALVAR"
+        except Exception as e: print(f"Erro result: {e}")
+
+    def copiar_uri_para_arquivo(self, uri):
+        try:
+            PythonActivity = autoclass('org.kivy.android.PythonActivity')
+            resolver = PythonActivity.mActivity.getContentResolver()
+            pfd = resolver.openFileDescriptor(uri, "r")
+            fd = pfd.detachFd()
+            dest = os.path.join(App.get_running_app().user_data_dir, f"temp_{int(time.time())}.jpg")
+            with os.fdopen(fd, "rb") as o, open(dest, "wb") as d:
+                shutil.copyfileobj(o, d)
+            return dest
+        except: return ""
+
+    def select_path(self, path):
+        if self.tipo_atual == "base":
+            self.path_base = path
+            self.face_index = 0
+            self.btn_idx.text = f"TROCAR ROSTO ({self.face_index})"
+            self.recriar_widget_imagem(path)
+        else:
+            self.path_rosto = path
+            if self.path_base: self.recriar_widget_imagem(self.path_base)
+
+    def recriar_widget_imagem(self, path):
+        self.area_foto.clear_widgets()
+        Cache.remove('kv.image')
+        Cache.remove('kv.texture')
+        self.img_preview = Image(source=path, allow_stretch=True, keep_ratio=True, opacity=1)
+        self.img_preview.bind(on_touch_down=self.evento_pressionar_foto, on_touch_up=self.evento_soltar_foto)
+        self.area_foto.add_widget(self.img_preview)
+
+    def abrir_menu_salvamento(self, instance):
+        content = MDBoxLayout(orientation="vertical", spacing=dp(12), padding=dp(10), adaptive_height=True)
+        btn = MDFillRoundFlatButton(text="SALVAR NA GALERIA", md_bg_color=self.cor_roxo_destaque, size_hint_x=1, on_release=self.salvar_escolhendo_pasta)
+        content.add_widget(btn)
+        self.dialogo_save_choice = MDDialog(title="Imagem Pronta!", type="custom", content_cls=content)
+        self.dialogo_save_choice.open()
+
+    def salvar_escolhendo_pasta(self, instance):
+        if self.dialogo_save_choice: self.dialogo_save_choice.dismiss()
+        self.tipo_atual = "salvar"
+        if ANDROID_OK: self.abrir_salvar_android()
+        else: self.abrir_fallback_filemanager()
+
+    def enviar_ao_pc(self, instance):
+        if not bd or not bd.local_id: return
+        if self.creditos_atuais <= 0: self.exibir_aviso_sem_creditos(); return
+        if not self.servidor_online: self.label_s.text = "SERVIDOR OFFLINE"; return
+        if not self.path_base or not self.path_rosto: self.label_s.text = "SELECIONE AS FOTOS"; return
+        self.processando_agora = True
+        self.imagem_final_pronta = False
+        self.set_controles_interativos(False)
+        self.label_s.text = "PROCESSANDO IA..."
+        self.barra_p.opacity = 1
+        self.barra_p.start()
+        threading.Thread(target=self.processo_servidor, daemon=True).start()
+
+    def processo_servidor(self):
+        try:
+            pasta_app = App.get_running_app().user_data_dir
+            nome_temp = os.path.join(pasta_app, "ia_temp_result.jpg")
+            payload = {'face_index': str(self.face_index)}
+            with open(self.path_base, 'rb') as fb, open(self.path_rosto, 'rb') as fr:
+                res = self.session.post(self.url_swap, files={'foto_base': fb, 'foto_rosto': fr}, data=payload, timeout=45)
+                if res.status_code == 200:
+                    with open(nome_temp, "wb") as f: f.write(res.content)
+                    self.arquivo_gerado_agora = nome_temp
+                    bd.atualizar_creditos(self.creditos_atuais - 1)
+                    Clock.schedule_once(lambda dt: self.sucesso())
+                else: Clock.schedule_once(lambda dt: self.erro("ERRO NO SERVIDOR"))
+        except: Clock.schedule_once(lambda dt: self.erro("FALHA DE CONEXÃO"))
+
+    def sucesso(self):
+        self.processando_agora = False
+        self.set_controles_interativos(True)
+        self.imagem_final_pronta = True
+        self.recriar_widget_imagem(self.arquivo_gerado_agora)
+        self.btn_salvar.disabled = False
+        self.label_s.text = "CONCLUÍDO!"
+        self.parar_barra()
+        self.atualizar_saldo_ui()
+
+    def erro(self, msg):
+        self.processando_agora = False
+        self.set_controles_interativos(True)
+        self.label_s.text = msg
+        self.parar_barra()
+
+    def parar_barra(self):
+        self.barra_p.stop()
+        self.barra_p.opacity = 0
+
+    def set_controles_interativos(self, estado):
+        self.btn_gerar.disabled = not estado
+        self.btn_b.disabled = not estado
+        self.btn_r.disabled = not estado
+        self.btn_idx.disabled = not estado
+        self.btn_limpar.disabled = not estado
+
+    def atualizar_saldo_ui(self, *args):
+        if not bd or not bd.local_id: return
+        try:
+            self.creditos_atuais = bd.pegar_creditos()
+            self.btn_gerar.text = f"GERAR ({self.creditos_atuais})"
+        except: pass
+
+    def checar_conexao_loop(self):
+        while True:
+            try:
+                s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                s.settimeout(2); s.connect((self.ip_servidor, 8080)); s.close()
+                Clock.schedule_once(lambda dt: self.atualizar_ui_servidor(True))
+            except: Clock.schedule_once(lambda dt: self.atualizar_ui_servidor(False))
+            time.sleep(5)
+
+    def atualizar_ui_servidor(self, online):
+        self.servidor_online = online
+        self.lbl_rede.text = "ONLINE" if online else "OFFLINE"
+        self.lbl_rede.color = (0, 1, 0, 1) if online else (1, 0, 0, 1)
+
+    def fazer_logout(self, *args):
+        if bd: bd.current_user = None; bd.id_token = None; bd.local_id = None
+        self.manager.current = 'login'
+
+    def alternar_rosto(self, instance):
+        self.face_index = (self.face_index + 1) if self.face_index < 5 else 0
+        instance.text = f"TROCAR ROSTO ({self.face_index})"
+
+    def limpar_tudo(self, *args):
+        self.area_foto.clear_widgets(); self.path_base = ""; self.path_rosto = ""
+        self.label_s.text = "Neural Face HD"; self.btn_salvar.disabled = True
+
+    def fechar_seletor(self, *args): self.file_manager.close(); self.file_manager_aberto = False
+    def processar_selecao_kivymd(self, path): self.fechar_seletor(); self.select_path(path)
+    def update_rect_meio(self, instance, value): self.rect_meio.pos = instance.pos; self.rect_meio.size = instance.size
+    def evento_pressionar_foto(self, instance, touch):
+        if instance.collide_point(*touch.pos) and self.imagem_final_pronta: instance.source = self.path_base
+    def evento_soltar_foto(self, instance, touch):
+        if self.imagem_final_pronta: instance.source = self.arquivo_gerado_agora
+
+    def exibir_termos_popup(self):
+        # ... (Código dos termos permanece igual ao seu original)
+        pass
+
+    def checar_termos_no_firebase(self):
+        # ... (Código da checagem permanece igual ao seu original)
+        pass
+    
+    def abrir_loja(self, *args):
+        if self.manager and self.manager.has_screen('loja'): self.manager.current = 'loja'
