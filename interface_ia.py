@@ -118,11 +118,13 @@ class TelaPrincipal(Screen):
 
         layout_geral = FloatLayout()
 
+        # --- ALTERAÇÃO 1: Barra de Status (Topo) ---
+        # Aumentamos o height e adicionamos padding no topo para fugir do relógio/câmera
         self.barra_t = BoxLayout(
             size_hint=(1, None),
-            height=dp(55),
+            height=dp(80),
             spacing=dp(10),
-            padding=dp(10),
+            padding=[dp(10), dp(35), dp(10), dp(10)],
             pos_hint={'top': 1}
         )
 
@@ -160,10 +162,12 @@ class TelaPrincipal(Screen):
         self.barra_t.add_widget(self.lbl_rede)
         self.barra_t.add_widget(self.btn_mais)
 
+        # --- ALTERAÇÃO 2: Área da Foto (Meio) ---
+        # Ajustamos o tamanho (size_hint) e a posição central (center_y) para caber entre as barras
         self.meio = MDBoxLayout(
             orientation='vertical',
-            size_hint=(0.98, 0.68),
-            pos_hint={'center_x': 0.5, 'center_y': 0.58},
+            size_hint=(0.98, 0.58),
+            pos_hint={'center_x': 0.5, 'center_y': 0.52},
             md_bg_color=(0, 0, 0, 0),
             padding=dp(10)
         )
@@ -191,13 +195,15 @@ class TelaPrincipal(Screen):
         self.meio.add_widget(self.area_foto)
         self.meio.add_widget(self.barra_p)
 
+        # --- ALTERAÇÃO 3: Painel de Botões (Base) ---
+        # Aumentamos o height e colocamos padding na base (bottom) para fugir dos botões do Android
         self.painel = BoxLayout(
             orientation='vertical',
             size_hint=(1, None),
-            height=dp(185),
-            padding=dp(10),
+            height=dp(215),
+            padding=[dp(10), dp(5), dp(10), dp(35)],
             spacing=dp(5),
-            pos_hint={'bottom': 1}
+            pos_hint={'x': 0, 'y': 0}
         )
 
         self.label_s = Label(
@@ -301,6 +307,8 @@ class TelaPrincipal(Screen):
                     decor = window.getDecorView()
                     window.clearFlags(LayoutParams.FLAG_FULLSCREEN)
                     decor.setSystemUiVisibility(View.SYSTEM_UI_FLAG_VISIBLE)
+                    # Força o redimensionamento para não cortar o app
+                    window.setSoftInputMode(LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
                 except Exception as e:
                     print(f"Erro mostrar barras Android: {e}")
 
@@ -354,7 +362,6 @@ class TelaPrincipal(Screen):
         intent.addFlags(Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION)
         currentActivity.startActivityForResult(intent, self.PICK_IMAGE_REQUEST)
 
-    # 🔥 CORREÇÃO 1: Fim do erro (invalid)
     def abrir_salvar_android(self):
         PythonActivity = autoclass('org.kivy.android.PythonActivity')
         Intent = autoclass('android.content.Intent')
@@ -423,7 +430,6 @@ class TelaPrincipal(Screen):
             print(f"Erro copiar URI para arquivo: {e}")
             return ""
 
-    # 🔥 CORREÇÃO 2: Limpeza de memória para foto 30+
     def salvar_em_uri(self, uri):
         try:
             if not self.arquivo_gerado_agora or not os.path.exists(self.arquivo_gerado_agora):
@@ -443,7 +449,6 @@ class TelaPrincipal(Screen):
             stream.flush()
             stream.close()
 
-            # Sincronização de arquivo
             try:
                 pfd = resolver.openFileDescriptor(uri, "rw")
                 fd_desc = pfd.getFileDescriptor()
@@ -452,7 +457,6 @@ class TelaPrincipal(Screen):
             except:
                 pass
 
-            # Liberação de memória crítica
             Cache.remove('kv.image')
             Cache.remove('kv.texture')
             gc.collect() 
@@ -583,7 +587,6 @@ class TelaPrincipal(Screen):
         self.btn_limpar.disabled = not estado
         self.btn_rec.disabled = not estado
 
-    # 🔥 CORREÇÃO 3: Gerenciamento de arquivos temporários
     def processo_servidor(self):
         tentativas_maximas = 8
         tentativa_atual = 0
@@ -831,7 +834,7 @@ class TelaPrincipal(Screen):
             "2. [b]DIREITO DE IMAGEM:[/b] Você declara possuir autorização legal e consensual "
             "de todas as pessoas cujas faces serão processadas.\n\n"
             "3. [b]USO ILÍCITO:[/b] Proibida a criação de conteúdo pornográfico (Deepnude), "
-            "difamatório, político-eleitoral enganoso ou que promova ódio/violência.\n/n"
+            "difamatório, político-eleitoral enganoso ou que promova ódio/violência.\n\n"
             "4. [b]ISENÇÃO:[/b] O desenvolvedor fornece apenas a tecnologia. O usuário é o "
             "único responsável pela destinação do conteúdo gerado.\n\n"
             "O uso indevido resultará em banimento imediato e cooperação total com autoridades judiciais."
