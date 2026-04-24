@@ -119,12 +119,12 @@ class TelaPrincipal(Screen):
 
         layout_geral = FloatLayout()
 
-        # --- BARRA SUPERIOR (Corrigida: Reduzi o padding para não sumir) ---
+        # --- BARRA SUPERIOR (Ajustada para voltar a aparecer) ---
         self.barra_t = BoxLayout(
             size_hint=(1, None),
-            height=dp(70),
+            height=dp(75),
             spacing=dp(10),
-            padding=[dp(10), dp(30), dp(10), dp(5)],
+            padding=[dp(10), dp(35), dp(10), dp(5)],
             pos_hint={'top': 1}
         )
 
@@ -143,13 +143,13 @@ class TelaPrincipal(Screen):
         self.barra_t.add_widget(self.lbl_rede)
         self.barra_t.add_widget(self.btn_mais)
 
-        # --- ÁREA CENTRAL (Reduzida para 65% para os botões aparecerem) ---
+        # --- ÁREA CENTRAL (Reduzida para dar espaço ao topo) ---
         self.meio = MDBoxLayout(
             orientation='vertical',
-            size_hint=(0.98, 0.65), 
-            pos_hint={'center_x': 0.5, 'center_y': 0.56}, 
+            size_hint=(0.98, 0.55), # Reduzi de 0.74 para 0.55 para o topo descer
+            pos_hint={'center_x': 0.5, 'center_y': 0.50}, # Rebaixado para 0.50
             md_bg_color=(0, 0, 0, 0),
-            padding=dp(2)
+            padding=dp(10)
         )
         with self.meio.canvas.before:
             Color(*self.cor_roxo_destaque)
@@ -164,14 +164,14 @@ class TelaPrincipal(Screen):
         self.meio.add_widget(self.area_foto)
         self.meio.add_widget(self.barra_p)
 
-        # --- PAINEL INFERIOR (Subido para folga total) ---
+        # --- PAINEL INFERIOR (Mantido como você aprovou) ---
         self.painel = BoxLayout(
             orientation='vertical',
             size_hint=(1, None),
-            height=dp(190),
-            padding=[dp(10), dp(5), dp(10), dp(10)],
+            height=dp(185),
+            padding=[dp(10), dp(5), dp(10), dp(5)],
             spacing=dp(5),
-            pos_hint={'x': 0, 'y': 0.06} # Subido para 0.06 para garantir visibilidade
+            pos_hint={'x': 0, 'y': 0.05} # Posição 0.05 aprovada por você
         )
 
         self.label_s = Label(text="Neural Face HD", color=(0.5, 0.5, 0.6, 1), font_size='11sp', size_hint_y=None, height=dp(18))
@@ -218,6 +218,23 @@ class TelaPrincipal(Screen):
                       {"viewclass": "OneLineListItem", "text": "Sobre", "on_release": lambda x="Sobre": self.menu_callback(x)}]
         self.dropdown = MDDropdownMenu(caller=self.btn_mais, items=menu_items, width_mult=4)
 
+    def on_enter(self):
+        # 🔥 Quando entra na tela, atualiza o saldo do banco de dados
+        self.atualizar_saldo_ui()
+        if self.th is None or not self.th.is_alive():
+            self.th = threading.Thread(target=self.checar_conexao_loop, daemon=True)
+            self.th.start()
+
+    def atualizar_saldo_ui(self, *args):
+        if not bd or not bd.local_id:
+            self.btn_gerar.text = "GERAR (0)"
+            return
+        try:
+            self.creditos_atuais = bd.pegar_creditos()
+            self.btn_gerar.text = f"GERAR ({self.creditos_atuais})"
+        except:
+            self.btn_gerar.text = "GERAR (0)"
+
     def ajustar_espaco_sistema(self, *args):
         if not ANDROID_OK: return
         try:
@@ -230,25 +247,6 @@ class TelaPrincipal(Screen):
                 if padding_dp > 0:
                     self.espacador_android.height = dp(padding_dp)
                     self.painel.height += dp(padding_dp)
-        except: pass
-
-    def mostrar_barras_android(self, *args):
-        if not ANDROID_OK: return
-        try:
-            PythonActivity = autoclass('org.kivy.android.PythonActivity')
-            View = autoclass('android.view.View')
-            LayoutParams = autoclass('android.view.WindowManager$LayoutParams')
-            currentActivity = PythonActivity.mActivity
-            def _mostrar():
-                try:
-                    window = currentActivity.getWindow()
-                    decor = window.getDecorView()
-                    window.clearFlags(LayoutParams.FLAG_FULLSCREEN)
-                    decor.setSystemUiVisibility(View.SYSTEM_UI_FLAG_VISIBLE)
-                    window.setSoftInputMode(LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
-                except: pass
-            if run_on_ui_thread: run_on_ui_thread(_mostrar)()
-            else: _mostrar()
         except: pass
 
     def salvar_em_uri(self, uri):
@@ -306,7 +304,6 @@ class TelaPrincipal(Screen):
         intent.setType("image/*")
         currentActivity.startActivityForResult(intent, self.PICK_IMAGE_REQUEST)
 
-    # 🔥 CORREÇÃO DO NOME (INVALID) COM TIMESTAMP MILISSEGUNDOS
     def abrir_salvar_android(self):
         PythonActivity = autoclass('org.kivy.android.PythonActivity')
         Intent = autoclass('android.content.Intent')
@@ -431,13 +428,6 @@ class TelaPrincipal(Screen):
         self.btn_r.disabled = not estado
         self.btn_idx.disabled = not estado
         self.btn_limpar.disabled = not estado
-
-    def atualizar_saldo_ui(self, *args):
-        if not bd or not bd.local_id: return
-        try:
-            self.creditos_atuais = bd.pegar_creditos()
-            self.btn_gerar.text = f"GERAR ({self.creditos_atuais})"
-        except: pass
 
     def checar_conexao_loop(self):
         while True:
