@@ -124,7 +124,7 @@ class TelaPrincipal(Screen):
             size_hint=(1, None),
             height=dp(110), # Aumentei a altura total da barra
             spacing=dp(10),
-            padding=[dp(10), dp(35), dp(10), dp(5)], # Padding de 70 empurra os botões pra baixo
+            padding=[dp(10), dp(75), dp(10), dp(5)], # Padding de 70 empurra os botões pra baixo
             pos_hint={'top': 1}
         )
 
