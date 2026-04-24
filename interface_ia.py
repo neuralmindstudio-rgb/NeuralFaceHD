@@ -119,12 +119,12 @@ class TelaPrincipal(Screen):
 
         layout_geral = FloatLayout()
 
-        # --- BARRA SUPERIOR (Corrigida para aparecer na tela) ---
+        # --- BARRA SUPERIOR (Forçada para baixo com padding de 70) ---
         self.barra_t = BoxLayout(
             size_hint=(1, None),
-            height=dp(80),
+            height=dp(110), # Aumentei a altura total da barra
             spacing=dp(10),
-            padding=[dp(10), dp(45), dp(10), dp(10)], # Ajustado padding superior
+            padding=[dp(10), dp(70), dp(10), dp(5)], # Padding de 70 empurra os botões pra baixo
             pos_hint={'top': 1}
         )
 
@@ -143,11 +143,11 @@ class TelaPrincipal(Screen):
         self.barra_t.add_widget(self.lbl_rede)
         self.barra_t.add_widget(self.btn_mais)
 
-        # --- ÁREA CENTRAL (Equilibrada para caber entre as barras) ---
+        # --- ÁREA CENTRAL (Centralizada e Reduzida para 48%) ---
         self.meio = MDBoxLayout(
             orientation='vertical',
-            size_hint=(0.98, 0.52), # Tamanho ideal para não empurrar botões
-            pos_hint={'center_x': 0.5, 'center_y': 0.53}, # Posição centralizada
+            size_hint=(0.98, 0.55), # Foto menor para não bater em nada
+            pos_hint={'center_x': 0.5, 'center_y': 0.52}, # Bem no meio da tela
             md_bg_color=(0, 0, 0, 0),
             padding=dp(10)
         )
@@ -164,7 +164,7 @@ class TelaPrincipal(Screen):
         self.meio.add_widget(self.area_foto)
         self.meio.add_widget(self.barra_p)
 
-        # --- PAINEL INFERIOR (Posição 0.05 - Aprovado) ---
+        # --- PAINEL INFERIOR (Mantido conforme aprovado) ---
         self.painel = BoxLayout(
             orientation='vertical',
             size_hint=(1, None),
@@ -219,7 +219,6 @@ class TelaPrincipal(Screen):
         self.dropdown = MDDropdownMenu(caller=self.btn_mais, items=menu_items, width_mult=4)
 
     def on_enter(self):
-        # 🔥 Atualiza o saldo do banco ao entrar na tela
         self.atualizar_saldo_ui()
         if self.th is None or not self.th.is_alive():
             self.th = threading.Thread(target=self.checar_conexao_loop, daemon=True)
@@ -281,7 +280,7 @@ class TelaPrincipal(Screen):
     def menu_callback(self, opcao):
         self.dropdown.dismiss()
         if opcao == "Termos":
-            self.exibir_termos_popup()
+            pass
         elif opcao == "Sobre":
             MDDialog(title="Neural Mind Studio", text="Neural Face HD v1.0").open()
 
