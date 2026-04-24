@@ -146,7 +146,7 @@ class TelaPrincipal(Screen):
         # --- ÁREA CENTRAL (Centralizada e Reduzida para 48%) ---
         self.meio = MDBoxLayout(
             orientation='vertical',
-            size_hint=(0.98, 0.65), # Foto menor para não bater em nada
+            size_hint=(0.98, 0.55), # Foto menor para não bater em nada
             pos_hint={'center_x': 0.5, 'center_y': 0.48}, # Bem no meio da tela
             md_bg_color=(0, 0, 0, 0),
             padding=dp(10)
