@@ -119,12 +119,12 @@ class TelaPrincipal(Screen):
 
         layout_geral = FloatLayout()
 
-        # --- BARRA SUPERIOR (Ajustada para voltar a aparecer) ---
+        # --- BARRA SUPERIOR (Corrigida para aparecer na tela) ---
         self.barra_t = BoxLayout(
             size_hint=(1, None),
-            height=dp(75),
+            height=dp(80),
             spacing=dp(10),
-            padding=[dp(10), dp(35), dp(10), dp(5)],
+            padding=[dp(10), dp(45), dp(10), dp(10)], # Ajustado padding superior
             pos_hint={'top': 1}
         )
 
@@ -143,11 +143,11 @@ class TelaPrincipal(Screen):
         self.barra_t.add_widget(self.lbl_rede)
         self.barra_t.add_widget(self.btn_mais)
 
-        # --- ÁREA CENTRAL (Reduzida para dar espaço ao topo) ---
+        # --- ÁREA CENTRAL (Equilibrada para caber entre as barras) ---
         self.meio = MDBoxLayout(
             orientation='vertical',
-            size_hint=(0.98, 0.55), # Reduzi de 0.74 para 0.55 para o topo descer
-            pos_hint={'center_x': 0.5, 'center_y': 0.50}, # Rebaixado para 0.50
+            size_hint=(0.98, 0.52), # Tamanho ideal para não empurrar botões
+            pos_hint={'center_x': 0.5, 'center_y': 0.53}, # Posição centralizada
             md_bg_color=(0, 0, 0, 0),
             padding=dp(10)
         )
@@ -164,14 +164,14 @@ class TelaPrincipal(Screen):
         self.meio.add_widget(self.area_foto)
         self.meio.add_widget(self.barra_p)
 
-        # --- PAINEL INFERIOR (Mantido como você aprovou) ---
+        # --- PAINEL INFERIOR (Posição 0.05 - Aprovado) ---
         self.painel = BoxLayout(
             orientation='vertical',
             size_hint=(1, None),
             height=dp(185),
             padding=[dp(10), dp(5), dp(10), dp(5)],
             spacing=dp(5),
-            pos_hint={'x': 0, 'y': 0.05} # Posição 0.05 aprovada por você
+            pos_hint={'x': 0, 'y': 0.05} 
         )
 
         self.label_s = Label(text="Neural Face HD", color=(0.5, 0.5, 0.6, 1), font_size='11sp', size_hint_y=None, height=dp(18))
@@ -219,7 +219,7 @@ class TelaPrincipal(Screen):
         self.dropdown = MDDropdownMenu(caller=self.btn_mais, items=menu_items, width_mult=4)
 
     def on_enter(self):
-        # 🔥 Quando entra na tela, atualiza o saldo do banco de dados
+        # 🔥 Atualiza o saldo do banco ao entrar na tela
         self.atualizar_saldo_ui()
         if self.th is None or not self.th.is_alive():
             self.th = threading.Thread(target=self.checar_conexao_loop, daemon=True)
@@ -283,7 +283,7 @@ class TelaPrincipal(Screen):
         if opcao == "Termos":
             self.exibir_termos_popup()
         elif opcao == "Sobre":
-            MDDialog(title="Neural Mind Studio", text="Neural Face HD v1.0\n\nAI avançada para imagens.").open()
+            MDDialog(title="Neural Mind Studio", text="Neural Face HD v1.0").open()
 
     def abrir_seletor_nativo(self, tipo):
         self.tipo_atual = tipo
