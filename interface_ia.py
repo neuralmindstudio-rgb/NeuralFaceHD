@@ -119,12 +119,12 @@ class TelaPrincipal(Screen):
 
         layout_geral = FloatLayout()
 
-        # --- BARRA SUPERIOR ---
+        # --- BARRA SUPERIOR (Corrigida: Reduzi o padding para não sumir) ---
         self.barra_t = BoxLayout(
             size_hint=(1, None),
-            height=dp(80),
+            height=dp(70),
             spacing=dp(10),
-            padding=[dp(10), dp(35), dp(10), dp(10)],
+            padding=[dp(10), dp(30), dp(10), dp(5)],
             pos_hint={'top': 1}
         )
 
@@ -143,11 +143,11 @@ class TelaPrincipal(Screen):
         self.barra_t.add_widget(self.lbl_rede)
         self.barra_t.add_widget(self.btn_mais)
 
-        # --- ÁREA CENTRAL (Ajuste Fino: Máxima Amplitude) ---
+        # --- ÁREA CENTRAL (Reduzida para 65% para os botões aparecerem) ---
         self.meio = MDBoxLayout(
             orientation='vertical',
-            size_hint=(0.98, 0.74), # Cresceu para 74% da tela
-            pos_hint={'center_x': 0.5, 'center_y': 0.62}, # Subiu o máximo possível
+            size_hint=(0.98, 0.65), 
+            pos_hint={'center_x': 0.5, 'center_y': 0.56}, 
             md_bg_color=(0, 0, 0, 0),
             padding=dp(2)
         )
@@ -164,14 +164,14 @@ class TelaPrincipal(Screen):
         self.meio.add_widget(self.area_foto)
         self.meio.add_widget(self.barra_p)
 
-        # --- PAINEL INFERIOR (Mais alto para folga total) ---
+        # --- PAINEL INFERIOR (Subido para folga total) ---
         self.painel = BoxLayout(
             orientation='vertical',
             size_hint=(1, None),
-            height=dp(185),
-            padding=[dp(10), dp(5), dp(10), dp(5)],
+            height=dp(190),
+            padding=[dp(10), dp(5), dp(10), dp(10)],
             spacing=dp(5),
-            pos_hint={'x': 0, 'y': 0.05} # Posição 0.05 para folga garantida
+            pos_hint={'x': 0, 'y': 0.06} # Subido para 0.06 para garantir visibilidade
         )
 
         self.label_s = Label(text="Neural Face HD", color=(0.5, 0.5, 0.6, 1), font_size='11sp', size_hint_y=None, height=dp(18))
@@ -474,11 +474,9 @@ class TelaPrincipal(Screen):
         if self.imagem_final_pronta: instance.source = self.arquivo_gerado_agora
 
     def exibir_termos_popup(self):
-        # ... 
         pass
 
     def checar_termos_no_firebase(self):
-        # ... 
         pass
     
     def abrir_loja(self, *args):
