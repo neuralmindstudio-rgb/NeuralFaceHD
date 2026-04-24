@@ -75,7 +75,7 @@ class TelaLoja(Screen):
         layout_geral.add_widget(self.container_meio)
 
         # Rodapé
-        footer = BoxLayout(orientation='vertical', size_hint=(0.9, None), height=dp(100), spacing=dp(5), pos_hint={'center_x': 0.5, 'y': 0.02})
+        footer = BoxLayout(orientation='vertical', size_hint=(0.9, None), height=dp(130), spacing=dp(15), pos_hint={'center_x': 0.5, 'y': 0.06})
         footer.add_widget(Label(text="© 2026 Neural Mind Studio", font_size='10sp', color=(0.4, 0.4, 0.4, 1)))
         
         btn_voltar = MDRectangleFlatButton(text="VOLTAR", text_color=(1, 1, 1, 1), line_color=(0.5, 0.5, 0.5, 1), size_hint_x=1)
