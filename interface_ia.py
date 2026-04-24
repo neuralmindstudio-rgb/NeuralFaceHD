@@ -122,9 +122,9 @@ class TelaPrincipal(Screen):
         # --- BARRA SUPERIOR (Forçada para baixo com padding de 70) ---
         self.barra_t = BoxLayout(
             size_hint=(1, None),
-            height=dp(110), # Aumentei a altura total da barra
+            height=dp(100), # Aumentei a altura total da barra
             spacing=dp(10),
-            padding=[dp(10), dp(95), dp(10), dp(5)], # Padding de 70 empurra os botões pra baixo
+            padding=[dp(10), dp(60), dp(10), dp(5)], # Padding de 70 empurra os botões pra baixo
             pos_hint={'top': 1}
         )
 
@@ -147,7 +147,7 @@ class TelaPrincipal(Screen):
         self.meio = MDBoxLayout(
             orientation='vertical',
             size_hint=(0.98, 0.55), # Foto menor para não bater em nada
-            pos_hint={'center_x': 0.5, 'center_y': 0.48}, # Bem no meio da tela
+            pos_hint={'center_x': 0.5, 'center_y': 0.56}, # Bem no meio da tela
             md_bg_color=(0, 0, 0, 0),
             padding=dp(10)
         )
