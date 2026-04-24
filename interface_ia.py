@@ -119,7 +119,7 @@ class TelaPrincipal(Screen):
 
         layout_geral = FloatLayout()
 
-        # --- BARRA SUPERIOR (Fugindo do relógio/câmera) ---
+        # --- BARRA SUPERIOR ---
         self.barra_t = BoxLayout(
             size_hint=(1, None),
             height=dp(80),
@@ -143,11 +143,11 @@ class TelaPrincipal(Screen):
         self.barra_t.add_widget(self.lbl_rede)
         self.barra_t.add_widget(self.btn_mais)
 
-        # --- ÁREA CENTRAL (Ajustada: mais alta e maior) ---
+        # --- ÁREA CENTRAL (Ajuste Fino: Máxima Amplitude) ---
         self.meio = MDBoxLayout(
             orientation='vertical',
-            size_hint=(0.98, 0.72), # Quadro da foto agora ocupa 72% da tela
-            pos_hint={'center_x': 0.5, 'center_y': 0.60}, # Centralizado mais para cima
+            size_hint=(0.98, 0.74), # Cresceu para 74% da tela
+            pos_hint={'center_x': 0.5, 'center_y': 0.62}, # Subiu o máximo possível
             md_bg_color=(0, 0, 0, 0),
             padding=dp(2)
         )
@@ -164,14 +164,14 @@ class TelaPrincipal(Screen):
         self.meio.add_widget(self.area_foto)
         self.meio.add_widget(self.barra_p)
 
-        # --- PAINEL INFERIOR (Subido para fugir da barra do sistema) ---
+        # --- PAINEL INFERIOR (Mais alto para folga total) ---
         self.painel = BoxLayout(
             orientation='vertical',
             size_hint=(1, None),
-            height=dp(180),
+            height=dp(185),
             padding=[dp(10), dp(5), dp(10), dp(5)],
             spacing=dp(5),
-            pos_hint={'x': 0, 'y': 0.04} # Empurrado 4% para cima para segurança total
+            pos_hint={'x': 0, 'y': 0.05} # Posição 0.05 para folga garantida
         )
 
         self.label_s = Label(text="Neural Face HD", color=(0.5, 0.5, 0.6, 1), font_size='11sp', size_hint_y=None, height=dp(18))
@@ -204,7 +204,6 @@ class TelaPrincipal(Screen):
         self.painel.add_widget(self.btn_idx)
         self.painel.add_widget(l2)
         
-        # --- ESPAÇADOR INTELIGENTE ---
         self.espacador_android = Widget(size_hint_y=None, height=0)
         self.painel.add_widget(self.espacador_android)
 
@@ -256,31 +255,23 @@ class TelaPrincipal(Screen):
         try:
             if not self.arquivo_gerado_agora or not os.path.exists(self.arquivo_gerado_agora):
                 return False
-
             PythonActivity = autoclass('org.kivy.android.PythonActivity')
-            currentActivity = PythonActivity.mActivity
-            resolver = currentActivity.getContentResolver()
-
+            resolver = PythonActivity.mActivity.getContentResolver()
             stream = resolver.openOutputStream(uri, "wt")
             if stream is None: return False
-
             with open(self.arquivo_gerado_agora, "rb") as origem:
                 shutil.copyfileobj(origem, stream)
-
             stream.flush()
             stream.close()
-
             try:
                 pfd = resolver.openFileDescriptor(uri, "rw")
                 fd_desc = pfd.getFileDescriptor()
                 fd_desc.sync() 
                 pfd.close()
             except: pass
-
             Cache.remove('kv.image')
             Cache.remove('kv.texture')
             gc.collect() 
-            
             return True
         except Exception as e:
             print(f"Erro no salvamento: {e}")
@@ -315,11 +306,13 @@ class TelaPrincipal(Screen):
         intent.setType("image/*")
         currentActivity.startActivityForResult(intent, self.PICK_IMAGE_REQUEST)
 
+    # 🔥 CORREÇÃO DO NOME (INVALID) COM TIMESTAMP MILISSEGUNDOS
     def abrir_salvar_android(self):
         PythonActivity = autoclass('org.kivy.android.PythonActivity')
         Intent = autoclass('android.content.Intent')
         currentActivity = PythonActivity.mActivity
-        nome_sugerido = f"NFHD_{datetime.now().strftime('%Y%m%d_%H%M%S')}.jpg"
+        ts = datetime.now().strftime("%Y%m%d_%H%M%S_%f")[:-3]
+        nome_sugerido = f"NeuralFace_{ts}.jpg"
         intent = Intent(Intent.ACTION_CREATE_DOCUMENT)
         intent.addCategory(Intent.CATEGORY_OPENABLE)
         intent.setType("image/jpeg")
@@ -481,11 +474,11 @@ class TelaPrincipal(Screen):
         if self.imagem_final_pronta: instance.source = self.arquivo_gerado_agora
 
     def exibir_termos_popup(self):
-        # Código dos termos...
+        # ... 
         pass
 
     def checar_termos_no_firebase(self):
-        # Código da checagem...
+        # ... 
         pass
     
     def abrir_loja(self, *args):
