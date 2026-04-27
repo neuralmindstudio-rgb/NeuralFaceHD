@@ -109,9 +109,9 @@ class TelaPrincipal(Screen):
         self.barra_t = BoxLayout(
             orientation='horizontal',
             size_hint=(1, None),
-            height=dp(85),          
+            height=dp(60),          
             spacing=dp(10),
-            padding=[dp(10), dp(40), dp(10), dp(5)], 
+            padding=[dp(10), dp(10), dp(10), dp(5)], 
             pos_hint={'top': 1}
         )
 
