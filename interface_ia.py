@@ -119,12 +119,14 @@ class TelaPrincipal(Screen):
 
         layout_geral = FloatLayout()
 
-        # --- BARRA SUPERIOR (Forçada para baixo com padding de 70) ---
+        # --- BARRA SUPERIOR (Ajustada para baixar tudo junto) ---
         self.barra_t = BoxLayout(
+            orientation='horizontal',
             size_hint=(1, None),
-            height=dp(110), # Aumentei a altura total da barra
+            height=dp(120),          # Altura maior para dar espaço
             spacing=dp(10),
-            padding=[dp(10), dp(80), dp(10), dp(5)], # Padding de 70 empurra os botões pra baixo
+            # O padding de 80 agora vai empurrar TUDO (botões e status)
+            padding=[dp(10), dp(80), dp(10), dp(5)], 
             pos_hint={'top': 1}
         )
 
