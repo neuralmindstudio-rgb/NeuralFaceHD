@@ -109,9 +109,9 @@ class TelaPrincipal(Screen):
         self.barra_t = BoxLayout(
             orientation='horizontal',
             size_hint=(1, None),
-            height=dp(60),          
+            height=dp(80),          
             spacing=dp(10),
-            padding=[dp(10), dp(10), dp(10), dp(5)], 
+            padding=[dp(10), dp(35), dp(10), dp(5)], 
             pos_hint={'top': 1}
         )
 
@@ -133,8 +133,8 @@ class TelaPrincipal(Screen):
         # --- ÁREA CENTRAL (Ajustada para o Gabarito Perfeito) ---
         self.meio = MDBoxLayout(
             orientation='vertical',
-            size_hint=(0.98, 0.54), 
-            pos_hint={'center_x': 0.5, 'center_y': 0.52}, 
+            size_hint=(0.98, 0.50), 
+            pos_hint={'center_x': 0.5, 'center_y': 0.48}, 
             md_bg_color=(0, 0, 0, 0),
             padding=dp(2)
         )
