@@ -124,7 +124,7 @@ class TelaPrincipal(Screen):
             size_hint=(1, None),
             height=dp(80), # Aumentei a altura total da barra
             spacing=dp(10),
-            padding=[dp(10), dp(65), dp(10), dp(5)], # Padding de 70 empurra os botões pra baixo
+            padding=[dp(10), dp(68), dp(10), dp(5)], # Padding de 70 empurra os botões pra baixo
             pos_hint={'top': 1}
         )
 
@@ -146,7 +146,7 @@ class TelaPrincipal(Screen):
         # --- ÁREA CENTRAL (Centralizada e Reduzida para 48%) ---
         self.meio = MDBoxLayout(
             orientation='vertical',
-            size_hint=(0.98, 0.50), # Foto menor para não bater em nada
+            size_hint=(0.98, 0.40), # Foto menor para não bater em nada
             pos_hint={'center_x': 0.5, 'center_y': 0.55}, # Bem no meio da tela
             md_bg_color=(0, 0, 0, 0),
             padding=dp(2)
