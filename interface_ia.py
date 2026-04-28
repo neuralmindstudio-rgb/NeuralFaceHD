@@ -111,7 +111,7 @@ class TelaPrincipal(Screen):
             size_hint=(1, None),
             height=dp(55),          
             spacing=dp(10),
-            padding=[dp(10), dp(35), dp(10), dp(5)], 
+            padding=[dp(10), dp(25), dp(10), dp(5)], 
             pos_hint={'top': 1}
         )
 
@@ -134,7 +134,7 @@ class TelaPrincipal(Screen):
         self.meio = MDBoxLayout(
             orientation='vertical',
             size_hint=(0.98, 0.40), 
-            pos_hint={'center_x': 0.5, 'center_y': 0.55}, 
+            pos_hint={'center_x': 0.5, 'center_y': 0.35}, 
             md_bg_color=(0, 0, 0, 0),
             padding=dp(2)
         )
