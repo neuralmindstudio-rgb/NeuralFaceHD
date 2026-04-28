@@ -109,7 +109,7 @@ class TelaPrincipal(Screen):
         self.barra_t = BoxLayout(
             orientation='horizontal',
             size_hint=(1, None),
-            height=dp(80),          
+            height=dp(55),          
             spacing=dp(10),
             padding=[dp(10), dp(35), dp(10), dp(5)], 
             pos_hint={'top': 1}
@@ -134,7 +134,7 @@ class TelaPrincipal(Screen):
         self.meio = MDBoxLayout(
             orientation='vertical',
             size_hint=(0.98, 0.50), 
-            pos_hint={'center_x': 0.5, 'center_y': 0.48}, 
+            pos_hint={'center_x': 0.5, 'center_y': 0.60}, 
             md_bg_color=(0, 0, 0, 0),
             padding=dp(2)
         )
@@ -223,10 +223,15 @@ class TelaPrincipal(Screen):
             "anos e assume total responsabilidade civil e criminal pelo uso desta ferramenta, "
             "declarando estar ciente de:\n\n"
             "1. [b]PROTEÇÃO À CRIANÇA (ECA):[/b] É terminantemente proibida a manipulação de "
-            "imagens de menores de 18 anos (Lei 14.811/2024).\n\n"
-            "2. [b]DIREITO DE IMAGEM:[/b] Você declara possuir autorização legal das pessoas processadas.\n\n"
-            "3. [b]USO ILÍCITO:[/b] Proibida a criação de conteúdo pornográfico, difamatório ou político enganoso.\n\n"
-            "4. [b]ISENÇÃO:[/b] O desenvolvedor fornece a tecnologia, mas o usuário é o único responsável pelo uso."
+            "imagens de menores de 18 anos. Violações estão sujeitas às penas da Lei 8.069/90 "
+            "e da Lei 14.811/2024 (ECA Digital).\n\n"
+            "2. [b]DIREITO DE IMAGEM:[/b] Você declara possuir autorização legal e consensual "
+            "de todas as pessoas cujas faces serão processadas.\n\n"
+            "3. [b]USO ILÍCITO:[/b] Proibida a criação de conteúdo pornográfico (Deepnude), "
+            "difamatório, político-eleitoral enganoso ou que promova ódio/violência.\n\n"
+            "4. [b]ISENÇÃO:[/b] O desenvolvedor fornece apenas a tecnologia. O usuário é o "
+            "único responsável pela destinação do conteúdo gerado.\n\n"
+            "O uso indevido resultará em banimento imediato e cooperação total com autoridades judiciais."
         )
         scroll = ScrollView(size_hint=(1, None), height=dp(350))
         lbl = Label(text=texto, markup=True, size_hint_y=None, color=(1,1,1,1), font_size='14sp', halign="left", valign="top", padding=(dp(10), dp(10)))
