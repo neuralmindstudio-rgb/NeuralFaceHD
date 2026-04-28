@@ -133,8 +133,8 @@ class TelaPrincipal(Screen):
         # --- ÁREA CENTRAL (Ajustada para o Gabarito Perfeito) ---
         self.meio = MDBoxLayout(
             orientation='vertical',
-            size_hint=(0.98, 0.60), 
-            pos_hint={'center_x': 0.5, 'center_y': 0.30}, 
+            size_hint=(0.98, 0.57), 
+            pos_hint={'center_x': 0.5, 'center_y': 0.57}, 
             md_bg_color=(0, 0, 0, 0),
             padding=dp(2)
         )
