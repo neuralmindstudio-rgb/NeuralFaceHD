@@ -135,11 +135,27 @@ class TelaPrincipal(Screen):
         # --- ÁREA CENTRAL ---
         self.meio = MDBoxLayout(
             orientation='vertical',
-            size_hint=(0.98, 0.50), 
-            pos_hint={'center_x': 0.5, 'center_y': 0.60}, 
+            size_hint=(None, None),
             md_bg_color=(0, 0, 0, 0),
             padding=dp(2)
         )
+
+        def ajustar_area_central(*args):
+            margem_lateral = dp(4)
+            margem_topo = dp(8)
+            margem_baixo = dp(4)
+
+            largura = Window.width - (margem_lateral * 2)
+            y_baixo = self.painel.y + self.painel.height + margem_baixo
+            y_topo = self.barra_t.y - margem_topo
+            altura = max(dp(50), y_topo - y_baixo)
+
+            self.meio.size = (largura, altura)
+            self.meio.pos = (margem_lateral, y_baixo)
+
+        Clock.schedule_once(ajustar_area_central, 0)
+        Window.bind(size=ajustar_area_central)
+
         with self.meio.canvas.before:
             Color(*self.cor_roxo_destaque)
             self.rect_meio = RoundedRectangle(pos=self.meio.pos, size=self.meio.size, radius=[dp(25)])
