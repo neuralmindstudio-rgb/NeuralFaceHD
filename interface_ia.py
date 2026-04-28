@@ -105,7 +105,7 @@ class TelaPrincipal(Screen):
 
         layout_geral = FloatLayout()
 
-        # --- BARRA SUPERIOR (Ajustada para o Gabarito Perfeito) ---
+        # --- BARRA SUPERIOR ---
         self.barra_t = BoxLayout(
             orientation='horizontal',
             size_hint=(1, None),
@@ -121,7 +121,9 @@ class TelaPrincipal(Screen):
         self.btn_salvar = MDRoundFlatIconButton(text="SALVAR", icon="download", disabled=True)
         self.btn_salvar.bind(on_release=self.abrir_menu_salvamento)
 
-        self.lbl_rede = Label(text="OFFLINE", color=(1, 0, 0, 1), font_size='9sp', bold=True)
+        # AJUSTE: Centralização das letras de status na barra
+        self.lbl_rede = Label(text="OFFLINE", color=(1, 0, 0, 1), font_size='9sp', bold=True, size_hint_y=None, height=dp(30), pos_hint={'center_y': 0.5})
+        
         self.btn_mais = MDIconButton(icon="dots-vertical", theme_text_color="Custom", text_color=(1, 1, 1, 1))
         self.btn_mais.bind(on_release=self.abrir_menu)
 
@@ -130,10 +132,10 @@ class TelaPrincipal(Screen):
         self.barra_t.add_widget(self.lbl_rede)
         self.barra_t.add_widget(self.btn_mais)
 
-        # --- ÁREA CENTRAL (Ajustada para o Gabarito Perfeito) ---
+        # --- ÁREA CENTRAL ---
         self.meio = MDBoxLayout(
             orientation='vertical',
-            size_hint=(0.98, 0.54), 
+            size_hint=(0.98, 0.56), 
             pos_hint={'center_x': 0.5, 'center_y': 0.58}, 
             md_bg_color=(0, 0, 0, 0),
             padding=dp(2)
@@ -151,7 +153,7 @@ class TelaPrincipal(Screen):
         self.meio.add_widget(self.area_foto)
         self.meio.add_widget(self.barra_p)
 
-        # --- PAINEL INFERIOR (Fixo) ---
+        # --- PAINEL INFERIOR ---
         self.painel = BoxLayout(
             orientation='vertical',
             size_hint=(1, None),
@@ -190,7 +192,7 @@ class TelaPrincipal(Screen):
 
         layout_geral.add_widget(self.meio)
         layout_geral.add_widget(self.painel)
-        layout_geral.add_widget(self.barra_t) # Adicionada por último para ficar no topo
+        layout_geral.add_widget(self.barra_t)
         self.add_widget(layout_geral)
 
         menu_items = [{"viewclass": "OneLineListItem", "text": "Termos de Uso", "on_release": lambda x="Termos": self.menu_callback(x)},
@@ -203,6 +205,16 @@ class TelaPrincipal(Screen):
         if self.th is None or not self.th.is_alive():
             self.th = threading.Thread(target=self.checar_conexao_loop, daemon=True)
             self.th.start()
+
+    def enviar_ao_pc(self, instance):
+        if self.creditos_atuais <= 0: self.exibir_aviso_sem_creditos(); return
+        if not self.servidor_online: self.label_s.text = "SERVIDOR OFFLINE"; return
+        if not self.path_base or not self.path_rosto: self.label_s.text = "SELECIONE AS FOTOS"; return
+        
+        # AJUSTE: Foto permanece na tela (não limpamos mais o widget aqui)
+        self.set_controles_interativos(False); self.label_s.text = "PROCESSANDO IA..."
+        self.barra_p.opacity = 1; self.barra_p.start()
+        threading.Thread(target=self.processo_servidor, daemon=True).start()
 
     def salvar_aceite_firebase(self, *args):
         if not bd or not bd.local_id:
@@ -256,7 +268,6 @@ class TelaPrincipal(Screen):
                 self.exibir_termos_popup()
         except: pass
 
-    # --- RESTANTE DAS FUNÇÕES (Mantidas do original) ---
     def atualizar_saldo_ui(self, *args):
         if not bd or not bd.local_id: self.btn_gerar.text = "GERAR (0)"; return
         try:
@@ -360,14 +371,6 @@ class TelaPrincipal(Screen):
     def salvar_escolhendo_pasta(self, instance):
         if self.dialogo_save_choice: self.dialogo_save_choice.dismiss()
         self.abrir_seletor_nativo("salvar")
-
-    def enviar_ao_pc(self, instance):
-        if self.creditos_atuais <= 0: self.exibir_aviso_sem_creditos(); return
-        if not self.servidor_online: self.label_s.text = "SERVIDOR OFFLINE"; return
-        if not self.path_base or not self.path_rosto: self.label_s.text = "SELECIONE AS FOTOS"; return
-        self.set_controles_interativos(False); self.label_s.text = "PROCESSANDO IA..."
-        self.barra_p.opacity = 1; self.barra_p.start()
-        threading.Thread(target=self.processo_servidor, daemon=True).start()
 
     def processo_servidor(self):
         try:
