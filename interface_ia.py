@@ -150,17 +150,16 @@ class TelaPrincipal(Screen):
             # topo: logo abaixo dos botões superiores
             y_topo = self.barra_t.y - margem_topo
 
-            # baixo: logo acima do texto "Neural Face HD"
-            label_x, label_y = self.label_s.to_window(0, 0)
-            y_baixo = label_y + self.label_s.height + margem_acima_texto
+            # baixo: posição REAL do label dentro do painel
+            y_baixo = self.painel.y + self.label_s.y + self.label_s.height + margem_acima_texto
 
-            altura = max(dp(50), y_topo - y_baixo)
+            altura = max(dp(250), y_topo - y_baixo)
 
             self.meio.size = (largura, altura)
             self.meio.pos = (margem_lateral, y_baixo)
 
-        Clock.schedule_once(ajustar_area_central, 0)
         Clock.schedule_once(ajustar_area_central, 0.2)
+        Clock.schedule_once(ajustar_area_central, 0.6)
         Window.bind(size=ajustar_area_central)
 
         with self.meio.canvas.before:
