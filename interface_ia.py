@@ -153,7 +153,7 @@ class TelaPrincipal(Screen):
             # baixo: acima do painel inferior, onde está o texto Neural Face HD
             y_baixo = self.painel.top + margem_baixo
 
-            altura = max(dp(300), y_topo - y_baixo)
+            altura = max(dp(300), y_topo - y_baixo - dp(20))
 
             self.meio.size = (largura, altura)
             self.meio.pos = (margem_lateral, y_baixo)
