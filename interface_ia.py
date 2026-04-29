@@ -135,34 +135,11 @@ class TelaPrincipal(Screen):
         # --- ÁREA CENTRAL ---
         self.meio = MDBoxLayout(
             orientation='vertical',
-            size_hint=(None, None),
+            size_hint=(0.98, 0.50), 
+            pos_hint={'center_x': 0.5, 'center_y': 0.60}, 
             md_bg_color=(0, 0, 0, 0),
             padding=dp(2)
         )
-
-        def ajustar_area_central(*args):
-            margem_lateral = dp(4)
-            margem_topo = dp(0)
-            margem_baixo = dp(6)
-
-            largura = Window.width - (margem_lateral * 2)
-
-            # topo: abaixo da barra superior
-            y_topo = Window.height - self.barra_t.height - margem_topo
-
-            # baixo: acima do painel inferior, onde está o texto Neural Face HD
-            y_baixo = self.painel.top + margem_baixo
-
-            altura = max(dp(300), y_topo - y_baixo)
-
-            self.meio.size = (largura, altura)
-            self.meio.pos = (margem_lateral, y_baixo)
-
-        Clock.schedule_once(ajustar_area_central, 0.3)
-        Clock.schedule_once(ajustar_area_central, 1)
-        Clock.schedule_once(ajustar_area_central, 2)
-        Window.bind(size=ajustar_area_central)
-
         with self.meio.canvas.before:
             Color(*self.cor_roxo_destaque)
             self.rect_meio = RoundedRectangle(pos=self.meio.pos, size=self.meio.size, radius=[dp(25)])
@@ -234,9 +211,7 @@ class TelaPrincipal(Screen):
         if not self.servidor_online: self.label_s.text = "SERVIDOR OFFLINE"; return
         if not self.path_base or not self.path_rosto: self.label_s.text = "SELECIONE AS FOTOS"; return
         
-        # AJUSTE: mantém a foto base escolhida na tela durante o novo processamento
-        self.imagem_final_pronta = False
-        self.recriar_widget_imagem(self.path_base)
+        # AJUSTE: Foto permanece na tela (não limpamos mais o widget aqui)
         self.set_controles_interativos(False); self.label_s.text = "PROCESSANDO IA..."
         self.barra_p.opacity = 1; self.barra_p.start()
         threading.Thread(target=self.processo_servidor, daemon=True).start()
@@ -325,14 +300,63 @@ class TelaPrincipal(Screen):
         PythonActivity.mActivity.startActivityForResult(intent, self.PICK_IMAGE_REQUEST)
 
     def abrir_salvar_android(self):
+        if self.salvar_direto_galeria_android():
+            self.label_s.text = "SALVO COM SUCESSO!"
+            return
+
         PythonActivity = autoclass('org.kivy.android.PythonActivity')
         Intent = autoclass('android.content.Intent')
         ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+        nome_arquivo = f"NeuralFaceHD_{ts}.jpg"
         intent = Intent(Intent.ACTION_CREATE_DOCUMENT)
         intent.addCategory(Intent.CATEGORY_OPENABLE)
         intent.setType("image/jpeg")
-        intent.putExtra(Intent.EXTRA_TITLE, f"NeuralFace_{ts}.jpg")
+        intent.putExtra(Intent.EXTRA_TITLE, nome_arquivo)
         PythonActivity.mActivity.startActivityForResult(intent, self.CREATE_FILE_REQUEST)
+
+    def salvar_direto_galeria_android(self):
+        if not ANDROID_OK or not self.arquivo_gerado_agora or not os.path.exists(self.arquivo_gerado_agora):
+            return False
+        try:
+            PythonActivity = autoclass('org.kivy.android.PythonActivity')
+            ContentValues = autoclass('android.content.ContentValues')
+            MediaStore = autoclass('android.provider.MediaStore')
+            Build = autoclass('android.os.Build')
+            Environment = autoclass('android.os.Environment')
+
+            resolver = PythonActivity.mActivity.getContentResolver()
+            ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+            nome_arquivo = f"NeuralFaceHD_{ts}.jpg"
+
+            values = ContentValues()
+            values.put(MediaStore.MediaColumns.DISPLAY_NAME, nome_arquivo)
+            values.put(MediaStore.MediaColumns.MIME_TYPE, "image/jpeg")
+
+            if Build.VERSION.SDK_INT >= 29:
+                values.put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_PICTURES + "/NeuralFaceHD")
+                values.put(MediaStore.MediaColumns.IS_PENDING, 1)
+
+            uri = resolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values)
+            if uri is None:
+                return False
+
+            stream = resolver.openOutputStream(uri, "w")
+            if stream is None:
+                return False
+
+            with open(self.arquivo_gerado_agora, "rb") as origem:
+                shutil.copyfileobj(origem, stream)
+            stream.close()
+
+            if Build.VERSION.SDK_INT >= 29:
+                values.clear()
+                values.put(MediaStore.MediaColumns.IS_PENDING, 0)
+                resolver.update(uri, values, None, None)
+
+            Cache.remove('kv.image'); Cache.remove('kv.texture'); gc.collect()
+            return True
+        except:
+            return False
 
     def on_activity_result(self, request_code, result_code, intent):
         if not ANDROID_OK: return
@@ -362,7 +386,7 @@ class TelaPrincipal(Screen):
         try:
             PythonActivity = autoclass('org.kivy.android.PythonActivity')
             resolver = PythonActivity.mActivity.getContentResolver()
-            stream = resolver.openOutputStream(uri, "wt")
+            stream = resolver.openOutputStream(uri, "w")
             with open(self.arquivo_gerado_agora, "rb") as origem:
                 shutil.copyfileobj(origem, stream)
             stream.close()
@@ -371,10 +395,6 @@ class TelaPrincipal(Screen):
         except: return False
 
     def select_path(self, path):
-        self.imagem_final_pronta = False
-        self.arquivo_gerado_agora = ""
-        self.btn_salvar.disabled = True
-
         if self.tipo_atual == "base":
             self.path_base = path; self.face_index = 0
             self.btn_idx.text = f"TROCAR ROSTO ({self.face_index})"
