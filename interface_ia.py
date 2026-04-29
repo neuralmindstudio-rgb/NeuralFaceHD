@@ -142,7 +142,7 @@ class TelaPrincipal(Screen):
 
         def ajustar_area_central(*args):
             margem_lateral = dp(4)
-            margem_topo = dp(18)
+            margem_topo = dp(0)
             margem_baixo = dp(6)
 
             largura = Window.width - (margem_lateral * 2)
@@ -234,7 +234,9 @@ class TelaPrincipal(Screen):
         if not self.servidor_online: self.label_s.text = "SERVIDOR OFFLINE"; return
         if not self.path_base or not self.path_rosto: self.label_s.text = "SELECIONE AS FOTOS"; return
         
-        # AJUSTE: Foto permanece na tela (não limpamos mais o widget aqui)
+        # AJUSTE: mantém a foto base escolhida na tela durante o novo processamento
+        self.imagem_final_pronta = False
+        self.recriar_widget_imagem(self.path_base)
         self.set_controles_interativos(False); self.label_s.text = "PROCESSANDO IA..."
         self.barra_p.opacity = 1; self.barra_p.start()
         threading.Thread(target=self.processo_servidor, daemon=True).start()
@@ -369,6 +371,10 @@ class TelaPrincipal(Screen):
         except: return False
 
     def select_path(self, path):
+        self.imagem_final_pronta = False
+        self.arquivo_gerado_agora = ""
+        self.btn_salvar.disabled = True
+
         if self.tipo_atual == "base":
             self.path_base = path; self.face_index = 0
             self.btn_idx.text = f"TROCAR ROSTO ({self.face_index})"
