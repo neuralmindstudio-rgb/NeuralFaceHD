@@ -122,7 +122,16 @@ class TelaPrincipal(Screen):
         self.btn_salvar.bind(on_release=self.abrir_menu_salvamento)
 
         # AJUSTE: Centralização das letras de status na barra
-        self.lbl_rede = Label(text="OFFLINE", color=(1, 0, 0, 1), font_size='9sp', bold=True, size_hint_y=None, height=dp(30), pos_hint={'center_y': 0.5})
+        self.lbl_rede = Label(
+            text="OFFLINE",
+            color=(1, 0, 0, 1),
+            font_size='9sp',
+            bold=True,
+            size_hint=(1, 1),
+            halign="center",
+            valign="middle"
+        )
+        self.lbl_rede.bind(size=lambda instance, value: setattr(instance, 'text_size', value))
         
         self.btn_mais = MDIconButton(icon="dots-vertical", theme_text_color="Custom", text_color=(1, 1, 1, 1))
         self.btn_mais.bind(on_release=self.abrir_menu)
@@ -235,6 +244,7 @@ class TelaPrincipal(Screen):
         if not self.path_base or not self.path_rosto: self.label_s.text = "SELECIONE AS FOTOS"; return
         
         # AJUSTE: Foto permanece na tela (não limpamos mais o widget aqui)
+        self.imagem_final_pronta = False
         self.set_controles_interativos(False); self.label_s.text = "PROCESSANDO IA..."
         self.barra_p.opacity = 1; self.barra_p.start()
         threading.Thread(target=self.processo_servidor, daemon=True).start()
@@ -369,6 +379,8 @@ class TelaPrincipal(Screen):
         except: return False
 
     def select_path(self, path):
+        self.imagem_final_pronta = False
+        self.btn_salvar.disabled = True
         if self.tipo_atual == "base":
             self.path_base = path; self.face_index = 0
             self.btn_idx.text = f"TROCAR ROSTO ({self.face_index})"
