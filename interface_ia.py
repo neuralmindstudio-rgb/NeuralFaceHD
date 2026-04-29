@@ -143,7 +143,7 @@ class TelaPrincipal(Screen):
         def ajustar_area_central(*args):
             margem_lateral = dp(4)
             margem_topo = dp(18)
-            margem_baixo = dp(0)
+            margem_baixo = dp(6)
 
             largura = Window.width - (margem_lateral * 2)
 
@@ -329,7 +329,8 @@ class TelaPrincipal(Screen):
         intent = Intent(Intent.ACTION_CREATE_DOCUMENT)
         intent.addCategory(Intent.CATEGORY_OPENABLE)
         intent.setType("image/jpeg")
-        intent.putExtra(Intent.EXTRA_TITLE, f"NeuralFace_{ts}.jpg")
+        nome_arquivo = f"NeuralFaceHD_{ts}.jpg"
+        intent.putExtra(Intent.EXTRA_TITLE, nome_arquivo)
         PythonActivity.mActivity.startActivityForResult(intent, self.CREATE_FILE_REQUEST)
 
     def on_activity_result(self, request_code, result_code, intent):
@@ -360,7 +361,7 @@ class TelaPrincipal(Screen):
         try:
             PythonActivity = autoclass('org.kivy.android.PythonActivity')
             resolver = PythonActivity.mActivity.getContentResolver()
-            stream = resolver.openOutputStream(uri, "wt")
+            stream = resolver.openOutputStream(uri, "w")
             with open(self.arquivo_gerado_agora, "rb") as origem:
                 shutil.copyfileobj(origem, stream)
             stream.close()
