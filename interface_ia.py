@@ -142,31 +142,25 @@ class TelaPrincipal(Screen):
 
         def ajustar_area_central(*args):
             margem_lateral = dp(4)
-            margem_topo = dp(4)
-            margem_acima_texto = dp(6)
+            margem_topo = dp(18)
+            margem_baixo = dp(6)
 
             largura = Window.width - (margem_lateral * 2)
 
-            # topo: logo abaixo dos botões superiores
-            y_topo = self.barra_t.y - margem_topo
+            # topo: abaixo da barra superior
+            y_topo = Window.height - self.barra_t.height - margem_topo
 
-            # posição REAL do painel inferior já desenhado
-            y_painel = self.painel.pos[1]
+            # baixo: acima do painel inferior, onde está o texto Neural Face HD
+            y_baixo = self.painel.top + margem_baixo
 
-            # posição REAL do texto dentro do painel
-            y_label = self.label_s.pos[1]
-
-            # base da área: logo acima do texto "Neural Face HD"
-            y_baixo = y_painel + y_label + self.label_s.height + margem_acima_texto
-
-            altura = max(dp(200), y_topo - y_baixo)
+            altura = max(dp(300), y_topo - y_baixo)
 
             self.meio.size = (largura, altura)
             self.meio.pos = (margem_lateral, y_baixo)
 
-        Clock.schedule_once(ajustar_area_central, 0)
         Clock.schedule_once(ajustar_area_central, 0.3)
         Clock.schedule_once(ajustar_area_central, 1)
+        Clock.schedule_once(ajustar_area_central, 2)
         Window.bind(size=ajustar_area_central)
 
         with self.meio.canvas.before:
