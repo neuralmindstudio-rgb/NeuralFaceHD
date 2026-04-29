@@ -143,23 +143,21 @@ class TelaPrincipal(Screen):
         def ajustar_area_central(*args):
             margem_lateral = dp(4)
             margem_topo = dp(4)
-            margem_acima_texto = dp(8)
+            margem_acima_neural_face = dp(4)
 
             largura = Window.width - (margem_lateral * 2)
 
-            # topo: logo abaixo dos botões superiores
-            y_topo = self.barra_t.y - margem_topo
+            y_topo = Window.height - self.barra_t.height - margem_topo
+            y_baixo = (Window.height * 0.05) + self.painel.height - dp(22) + margem_acima_neural_face
 
-            # baixo: posição REAL do label dentro do painel
-            y_baixo = self.painel.y + self.label_s.y + self.label_s.height + margem_acima_texto
-
-            altura = max(dp(250), y_topo - y_baixo)
+            altura = y_topo - y_baixo
 
             self.meio.size = (largura, altura)
             self.meio.pos = (margem_lateral, y_baixo)
 
-        Clock.schedule_once(ajustar_area_central, 0.2)
-        Clock.schedule_once(ajustar_area_central, 0.6)
+        Clock.schedule_once(ajustar_area_central, 0)
+        Clock.schedule_once(ajustar_area_central, 0.3)
+        Clock.schedule_once(ajustar_area_central, 1)
         Window.bind(size=ajustar_area_central)
 
         with self.meio.canvas.before:
