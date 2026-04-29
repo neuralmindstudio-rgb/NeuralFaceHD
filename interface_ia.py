@@ -135,8 +135,8 @@ class TelaPrincipal(Screen):
         # --- ÁREA CENTRAL ---
         self.meio = MDBoxLayout(
             orientation='vertical',
-            size_hint=(0.98, 0.50), 
-            pos_hint={'center_x': 0.5, 'center_y': 0.60}, 
+            size_hint=(0.98, 0.42), 
+            pos_hint={'center_x': 0.5, 'center_y': 0.68}, 
             md_bg_color=(0, 0, 0, 0),
             padding=dp(2)
         )
@@ -302,17 +302,8 @@ class TelaPrincipal(Screen):
     def abrir_salvar_android(self):
         if self.salvar_direto_galeria_android():
             self.label_s.text = "SALVO COM SUCESSO!"
-            return
-
-        PythonActivity = autoclass('org.kivy.android.PythonActivity')
-        Intent = autoclass('android.content.Intent')
-        ts = datetime.now().strftime("%Y%m%d_%H%M%S")
-        nome_arquivo = f"NeuralFaceHD_{ts}.jpg"
-        intent = Intent(Intent.ACTION_CREATE_DOCUMENT)
-        intent.addCategory(Intent.CATEGORY_OPENABLE)
-        intent.setType("image/jpeg")
-        intent.putExtra(Intent.EXTRA_TITLE, nome_arquivo)
-        PythonActivity.mActivity.startActivityForResult(intent, self.CREATE_FILE_REQUEST)
+        else:
+            self.label_s.text = "ERRO AO SALVAR"
 
     def salvar_direto_galeria_android(self):
         if not ANDROID_OK or not self.arquivo_gerado_agora or not os.path.exists(self.arquivo_gerado_agora):
@@ -322,7 +313,7 @@ class TelaPrincipal(Screen):
             ContentValues = autoclass('android.content.ContentValues')
             MediaStore = autoclass('android.provider.MediaStore')
             Build = autoclass('android.os.Build')
-            Environment = autoclass('android.os.Environment')
+            Integer = autoclass('java.lang.Integer')
 
             resolver = PythonActivity.mActivity.getContentResolver()
             ts = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -333,29 +324,31 @@ class TelaPrincipal(Screen):
             values.put(MediaStore.MediaColumns.MIME_TYPE, "image/jpeg")
 
             if Build.VERSION.SDK_INT >= 29:
-                values.put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_PICTURES + "/NeuralFaceHD")
-                values.put(MediaStore.MediaColumns.IS_PENDING, 1)
+                values.put(MediaStore.MediaColumns.RELATIVE_PATH, "Pictures/NeuralFaceHD")
+                values.put(MediaStore.MediaColumns.IS_PENDING, Integer.valueOf(1))
 
             uri = resolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values)
             if uri is None:
                 return False
 
-            stream = resolver.openOutputStream(uri, "w")
+            stream = resolver.openOutputStream(uri)
             if stream is None:
                 return False
 
             with open(self.arquivo_gerado_agora, "rb") as origem:
                 shutil.copyfileobj(origem, stream)
+            stream.flush()
             stream.close()
 
             if Build.VERSION.SDK_INT >= 29:
                 values.clear()
-                values.put(MediaStore.MediaColumns.IS_PENDING, 0)
+                values.put(MediaStore.MediaColumns.IS_PENDING, Integer.valueOf(0))
                 resolver.update(uri, values, None, None)
 
             Cache.remove('kv.image'); Cache.remove('kv.texture'); gc.collect()
             return True
-        except:
+        except Exception as e:
+            print("ERRO AO SALVAR NA GALERIA:", e)
             return False
 
     def on_activity_result(self, request_code, result_code, intent):
