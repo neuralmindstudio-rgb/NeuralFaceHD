@@ -122,7 +122,16 @@ class TelaPrincipal(Screen):
         self.btn_salvar.bind(on_release=self.abrir_menu_salvamento)
 
         # AJUSTE: Centralização das letras de status na barra
-        self.lbl_rede = Label(text="OFFLINE", color=(1, 0, 0, 1), font_size='9sp', bold=True, size_hint_y=None, height=dp(30), pos_hint={'center_y': 0.5})
+        self.lbl_rede = Label(
+            text="OFFLINE",
+            color=(1, 0, 0, 1),
+            font_size='9sp',
+            bold=True,
+            size_hint=(1, 1),
+            halign="center",
+            valign="middle"
+        )
+        self.lbl_rede.bind(size=lambda instance, value: setattr(instance, 'text_size', value))
         
         self.btn_mais = MDIconButton(icon="dots-vertical", theme_text_color="Custom", text_color=(1, 1, 1, 1))
         self.btn_mais.bind(on_release=self.abrir_menu)
@@ -143,7 +152,7 @@ class TelaPrincipal(Screen):
         def ajustar_area_central(*args):
             margem_lateral = dp(4)
             margem_topo = dp(18)
-            margem_baixo = dp(6)
+            margem_baixo = dp(4)
 
             largura = Window.width - (margem_lateral * 2)
 
@@ -153,7 +162,7 @@ class TelaPrincipal(Screen):
             # baixo: acima do painel inferior, onde está o texto Neural Face HD
             y_baixo = self.painel.top + margem_baixo
 
-            altura = max(dp(300), y_topo - y_baixo - dp(20))
+            altura = max(dp(300), y_topo - y_baixo)
 
             self.meio.size = (largura, altura)
             self.meio.pos = (margem_lateral, y_baixo)
@@ -235,6 +244,7 @@ class TelaPrincipal(Screen):
         if not self.path_base or not self.path_rosto: self.label_s.text = "SELECIONE AS FOTOS"; return
         
         # AJUSTE: Foto permanece na tela (não limpamos mais o widget aqui)
+        self.imagem_final_pronta = False
         self.set_controles_interativos(False); self.label_s.text = "PROCESSANDO IA..."
         self.barra_p.opacity = 1; self.barra_p.start()
         threading.Thread(target=self.processo_servidor, daemon=True).start()
@@ -329,8 +339,7 @@ class TelaPrincipal(Screen):
         intent = Intent(Intent.ACTION_CREATE_DOCUMENT)
         intent.addCategory(Intent.CATEGORY_OPENABLE)
         intent.setType("image/jpeg")
-        nome_arquivo = f"NeuralFaceHD_{ts}.jpg"
-        intent.putExtra(Intent.EXTRA_TITLE, nome_arquivo)
+        intent.putExtra(Intent.EXTRA_TITLE, f"NeuralFace_{ts}.jpg")
         PythonActivity.mActivity.startActivityForResult(intent, self.CREATE_FILE_REQUEST)
 
     def on_activity_result(self, request_code, result_code, intent):
@@ -361,7 +370,7 @@ class TelaPrincipal(Screen):
         try:
             PythonActivity = autoclass('org.kivy.android.PythonActivity')
             resolver = PythonActivity.mActivity.getContentResolver()
-            stream = resolver.openOutputStream(uri, "w")
+            stream = resolver.openOutputStream(uri, "wt")
             with open(self.arquivo_gerado_agora, "rb") as origem:
                 shutil.copyfileobj(origem, stream)
             stream.close()
@@ -370,6 +379,8 @@ class TelaPrincipal(Screen):
         except: return False
 
     def select_path(self, path):
+        self.imagem_final_pronta = False
+        self.btn_salvar.disabled = True
         if self.tipo_atual == "base":
             self.path_base = path; self.face_index = 0
             self.btn_idx.text = f"TROCAR ROSTO ({self.face_index})"
