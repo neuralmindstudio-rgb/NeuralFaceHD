@@ -148,7 +148,7 @@ class TelaPrincipal(Screen):
             largura = Window.width - (margem_lateral * 2)
 
             # topo: abaixo da barra superior
-            y_topo = Window.height - self.barra_t.height - margem_topo
+            y_topo = Window.height - self.barra_t.height - margem_topo = dp(10)
 
             # baixo: acima do painel inferior, onde está o texto Neural Face HD
             y_baixo = self.painel.top + margem_baixo
