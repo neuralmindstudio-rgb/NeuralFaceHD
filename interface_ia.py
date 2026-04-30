@@ -376,21 +376,22 @@ class TelaPrincipal(Screen):
             return False
 
     def on_activity_result(self, request_code, result_code, intent):
-    if not ANDROID_OK: return
-    try:
-        Activity = autoclass('android.app.Activity')
-        if result_code != Activity.RESULT_OK or intent is None: return
-        uri = intent.getData()
+            if not ANDROID_OK:
+            return
+        try:
+            Activity = autoclass('android.app.Activity')
+            if result_code != Activity.RESULT_OK or intent is None:
+                return
 
-        if request_code == self.PICK_IMAGE_REQUEST:
-            path = self.copiar_uri_para_arquivo(uri)
-            if path:
-                Clock.schedule_once(lambda dt: self.select_path(path))
+            uri = intent.getData()
 
-        # ❌ REMOVIDO: CREATE_FILE_REQUEST (causava "(invalid)")
+            if request_code == self.PICK_IMAGE_REQUEST:
+                path = self.copiar_uri_para_arquivo(uri)
+                if path:
+                    Clock.schedule_once(lambda dt: self.select_path(path))
 
-    except: 
-        pass
+        except:
+            pass
 
     def copiar_uri_para_arquivo(self, uri):
         try:
