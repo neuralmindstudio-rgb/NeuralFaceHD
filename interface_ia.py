@@ -376,7 +376,7 @@ class TelaPrincipal(Screen):
             return False
 
     def on_activity_result(self, request_code, result_code, intent):
-            if not ANDROID_OK:
+        if not ANDROID_OK:
             return
         try:
             Activity = autoclass('android.app.Activity')
