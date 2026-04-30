@@ -91,6 +91,7 @@ class TelaPrincipal(Screen):
         self.th = None
         self.processando_agora = False
         self.tipo_atual = "base"
+        self.ultima_foto_selecionada = ""
 
         self.file_manager = MDFileManager(
             exit_manager=self.fechar_seletor,
@@ -143,24 +144,17 @@ class TelaPrincipal(Screen):
         def ajustar_area_central(*args):
             margem_lateral = dp(4)
             margem_topo = dp(0)
-            margem_acima_texto = dp(35)
+            margem_baixo = dp(25)
 
             largura = Window.width - (margem_lateral * 2)
-
-            # topo: logo abaixo dos botões superiores
+            y_baixo = self.painel.y + self.painel.height - dp(50)
             y_topo = self.barra_t.y - margem_topo
-
-            # baixo: logo acima do texto "Neural Face HD"
-            label_x, label_y = self.label_s.to_window(0, 0)
-            y_baixo = label_y + self.label_s.height + margem_acima_texto
-
             altura = max(dp(50), y_topo - y_baixo)
 
             self.meio.size = (largura, altura)
             self.meio.pos = (margem_lateral, y_baixo)
 
         Clock.schedule_once(ajustar_area_central, 0)
-        Clock.schedule_once(ajustar_area_central, 0.2)
         Window.bind(size=ajustar_area_central)
 
         with self.meio.canvas.before:
@@ -234,11 +228,13 @@ class TelaPrincipal(Screen):
         if not self.servidor_online: self.label_s.text = "SERVIDOR OFFLINE"; return
         if not self.path_base or not self.path_rosto: self.label_s.text = "SELECIONE AS FOTOS"; return
         
-        # AJUSTE: mantém a foto base escolhida na tela durante novo processamento
+        # AJUSTE: nunca deixa a imagem gerada anterior voltar ao iniciar novo processamento
         self.imagem_final_pronta = False
         self.arquivo_gerado_agora = ""
         self.btn_salvar.disabled = True
-        self.recriar_widget_imagem(self.path_base)
+        foto_preview = self.ultima_foto_selecionada or self.path_base
+        if foto_preview and os.path.exists(foto_preview):
+            self.recriar_widget_imagem(foto_preview)
 
         self.set_controles_interativos(False); self.label_s.text = "PROCESSANDO IA..."
         self.barra_p.opacity = 1; self.barra_p.start()
@@ -328,6 +324,7 @@ class TelaPrincipal(Screen):
         PythonActivity.mActivity.startActivityForResult(intent, self.PICK_IMAGE_REQUEST)
 
     def abrir_salvar_android(self):
+        # Salva direto na galeria para evitar o Android criar arquivo como "invalid".
         if self.salvar_direto_galeria_android():
             self.label_s.text = "SALVO COM SUCESSO!"
         else:
@@ -404,19 +401,20 @@ class TelaPrincipal(Screen):
 
     def salvar_em_uri(self, uri):
         try:
-            PythonActivity = autoclass("org.kivy.android.PythonActivity")
+            PythonActivity = autoclass('org.kivy.android.PythonActivity')
             resolver = PythonActivity.mActivity.getContentResolver()
             stream = resolver.openOutputStream(uri, "w")
             with open(self.arquivo_gerado_agora, "rb") as origem:
                 shutil.copyfileobj(origem, stream)
             stream.close()
-            Cache.remove("kv.image"); Cache.remove("kv.texture"); gc.collect()
+            Cache.remove('kv.image'); Cache.remove('kv.texture'); gc.collect()
             return True
         except: return False
 
     def select_path(self, path):
         self.imagem_final_pronta = False
         self.arquivo_gerado_agora = ""
+        self.ultima_foto_selecionada = path
         self.btn_salvar.disabled = True
 
         if self.tipo_atual == "base":
@@ -425,7 +423,7 @@ class TelaPrincipal(Screen):
             self.recriar_widget_imagem(path)
         else:
             self.path_rosto = path
-            if self.path_base: self.recriar_widget_imagem(self.path_base)
+            self.recriar_widget_imagem(path)
 
     def recriar_widget_imagem(self, path):
         self.area_foto.clear_widgets()
@@ -443,7 +441,10 @@ class TelaPrincipal(Screen):
 
     def salvar_escolhendo_pasta(self, instance):
         if self.dialogo_save_choice: self.dialogo_save_choice.dismiss()
-        self.abrir_seletor_nativo("salvar")
+        if self.salvar_direto_galeria_android():
+            self.label_s.text = "SALVO COM SUCESSO!"
+        else:
+            self.label_s.text = "ERRO AO SALVAR"
 
     def processo_servidor(self):
         try:
