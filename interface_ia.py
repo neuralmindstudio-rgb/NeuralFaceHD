@@ -143,7 +143,7 @@ class TelaPrincipal(Screen):
         def ajustar_area_central(*args):
             margem_lateral = dp(4)
             margem_topo = dp(18)
-            margem_baixo = dp(-05)
+            margem_baixo = dp(-5)
 
             largura = Window.width - (margem_lateral * 2)
 
