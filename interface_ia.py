@@ -156,10 +156,10 @@ class TelaPrincipal(Screen):
 
         Clock.schedule_once(ajustar_area_central, 0.3)
         Clock.schedule_once(ajustar_area_central, 1)
-        Clock.schedule_once(ajustar_area_central, 2)
-
-        Window.bind(size=ajustar_area_central)
-        self.barra_t.bind(pos=ajustar_area_central, size=ajustar_area_central)
+		Clock.schedule_once(ajustar_area_central, 2)
+		
+		Window.bind(size=ajustar_area_central)
+		self.barra_t.bind(pos=ajustar_area_central, size=ajustar_area_central)
 
         with self.meio.canvas.before:
             Color(*self.cor_roxo_destaque)
