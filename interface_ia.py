@@ -154,8 +154,12 @@ class TelaPrincipal(Screen):
             self.meio.size = (largura, altura)
             self.meio.pos = (margem_lateral, y_baixo)
 
-        Clock.schedule_once(ajustar_area_central, 0)
+        Clock.schedule_once(ajustar_area_central, 0.3)
+        Clock.schedule_once(ajustar_area_central, 1)
+        Clock.schedule_once(ajustar_area_central, 2)
+
         Window.bind(size=ajustar_area_central)
+        self.barra_t.bind(pos=ajustar_area_central, size=ajustar_area_central)
 
         with self.meio.canvas.before:
             Color(*self.cor_roxo_destaque)
@@ -211,6 +215,9 @@ class TelaPrincipal(Screen):
         layout_geral.add_widget(self.painel)
         layout_geral.add_widget(self.barra_t)
         self.add_widget(layout_geral)
+		self.painel.bind(pos=ajustar_area_central, size=ajustar_area_central)
+		Clock.schedule_once(ajustar_area_central, 0.5)
+		Clock.schedule_once(ajustar_area_central, 1.5)
 
         menu_items = [{"viewclass": "OneLineListItem", "text": "Termos de Uso", "on_release": lambda x="Termos": self.menu_callback(x)},
                       {"viewclass": "OneLineListItem", "text": "Sobre", "on_release": lambda x="Sobre": self.menu_callback(x)}]
