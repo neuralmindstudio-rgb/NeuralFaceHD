@@ -94,6 +94,8 @@ class TelaPrincipal(Screen):
         self.processando_agora = False
         self.tipo_atual = "base"
         self.ultima_foto_selecionada = ""
+        self.combo_credito_pago = None
+        self.deve_cobrar_credito_rodada = True
 
         self.file_manager = MDFileManager(
             exit_manager=self.fechar_seletor,
@@ -157,8 +159,8 @@ class TelaPrincipal(Screen):
 
         def ajustar_area_central(*args):
             margem_lateral = dp(4)
-            margem_topo = dp(8)
-            margem_baixo = dp(2)
+            margem_topo = dp(4)
+            margem_baixo = dp(0)
 
             largura = Window.width - (margem_lateral * 2)
             y_baixo = self.painel.y + self.painel.height + margem_baixo
@@ -251,9 +253,12 @@ class TelaPrincipal(Screen):
             self.th.start()
 
     def enviar_ao_pc(self, instance):
-        if self.creditos_atuais <= 0: self.exibir_aviso_sem_creditos(); return
         if not self.servidor_online: self.label_s.text = "SERVIDOR OFFLINE"; return
         if not self.path_base or not self.path_rosto: self.label_s.text = "SELECIONE AS FOTOS"; return
+        self.deve_cobrar_credito_rodada = self.precisa_cobrar_credito()
+        if self.deve_cobrar_credito_rodada and self.creditos_atuais <= 0:
+            self.exibir_aviso_sem_creditos()
+            return
         
         # AJUSTE: nunca deixa a imagem gerada anterior voltar ao iniciar novo processamento
         self.imagem_final_pronta = False
@@ -366,10 +371,12 @@ class TelaPrincipal(Screen):
             MediaStore = autoclass("android.provider.MediaStore")
             Build = autoclass("android.os.Build")
             Environment = autoclass("android.os.Environment")
+            MediaScannerConnection = autoclass("android.media.MediaScannerConnection")
 
             resolver = PythonActivity.mActivity.getContentResolver()
             ts = datetime.now().strftime("%Y%m%d_%H%M%S")
             nome_arquivo = f"NeuralFaceHD_{ts}.jpg"
+            caminho_fallback = os.path.join("/storage/emulated/0/Pictures/NeuralFaceHD", nome_arquivo)
 
             values = ContentValues()
             values.put(MediaStore.MediaColumns.DISPLAY_NAME, nome_arquivo)
@@ -381,25 +388,51 @@ class TelaPrincipal(Screen):
 
             uri = resolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values)
             if uri is None:
-                return False
+                return self._salvar_fallback_arquivo(caminho_fallback)
 
-            stream = resolver.openOutputStream(uri)
+            stream = resolver.openOutputStream(uri, "w")
             if stream is None:
-                return False
+                return self._salvar_fallback_arquivo(caminho_fallback)
 
-            with open(self.arquivo_gerado_agora, "rb") as origem:
-                shutil.copyfileobj(origem, stream)
-            stream.close()
+            try:
+                with open(self.arquivo_gerado_agora, "rb") as origem:
+                    shutil.copyfileobj(origem, stream)
+                stream.flush()
+            finally:
+                stream.close()
 
             if Build.VERSION.SDK_INT >= 29:
                 values.clear()
                 values.put(MediaStore.MediaColumns.IS_PENDING, 0)
                 resolver.update(uri, values, None, None)
 
+            MediaScannerConnection.scanFile(
+                PythonActivity.mActivity,
+                [caminho_fallback],
+                ["image/jpeg"],
+                None
+            )
             Cache.remove("kv.image"); Cache.remove("kv.texture"); gc.collect()
             return True
         except Exception as e:
             print("ERRO SALVAR GALERIA:", e)
+            try:
+                ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+                nome_arquivo = f"NeuralFaceHD_{ts}.jpg"
+                caminho_fallback = os.path.join("/storage/emulated/0/Pictures/NeuralFaceHD", nome_arquivo)
+                return self._salvar_fallback_arquivo(caminho_fallback)
+            except Exception as e2:
+                print("ERRO FALLBACK SALVAR GALERIA:", e2)
+                return False
+
+    def _salvar_fallback_arquivo(self, destino):
+        try:
+            pasta = os.path.dirname(destino)
+            os.makedirs(pasta, exist_ok=True)
+            shutil.copy2(self.arquivo_gerado_agora, destino)
+            return True
+        except Exception as e:
+            print("ERRO SALVAR FALLBACK ARQUIVO:", e)
             return False
 
     def on_activity_result(self, request_code, result_code, intent):
@@ -487,7 +520,9 @@ class TelaPrincipal(Screen):
                 if res.status_code == 200:
                     with open(nome_temp, "wb") as f: f.write(res.content)
                     self.arquivo_gerado_agora = nome_temp
-                    bd.atualizar_creditos(self.creditos_atuais - 1)
+                    if self.deve_cobrar_credito_rodada and bd:
+                        bd.atualizar_creditos(self.creditos_atuais - 1)
+                        self.combo_credito_pago = self.obter_chave_combinacao()
                     Clock.schedule_once(lambda dt: self.sucesso())
                 else: Clock.schedule_once(lambda dt: self.erro("ERRO NO SERVIDOR"))
         except: Clock.schedule_once(lambda dt: self.erro("FALHA DE CONEXÃO"))
@@ -526,6 +561,17 @@ class TelaPrincipal(Screen):
     def alternar_rosto(self, instance):
         self.face_index = (self.face_index + 1) if self.face_index < 5 else 0
         instance.text = f"TROCAR ROSTO ({self.face_index})"
+
+    def obter_chave_combinacao(self):
+        if not self.path_base or not self.path_rosto:
+            return None
+        return (os.path.abspath(self.path_base), os.path.abspath(self.path_rosto))
+
+    def precisa_cobrar_credito(self):
+        chave_atual = self.obter_chave_combinacao()
+        if chave_atual is None:
+            return True
+        return self.combo_credito_pago != chave_atual
 
     def limpar_tudo(self, *args):
         self.area_foto.clear_widgets(); self.path_base = ""; self.path_rosto = ""
