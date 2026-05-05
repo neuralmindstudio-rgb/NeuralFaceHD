@@ -371,6 +371,25 @@ class TelaPrincipal(Screen):
         else:
             self.label_s.text = "ERRO AO SALVAR"
 
+    def abrir_salvar_como_android(self):
+        if not ANDROID_OK:
+            self.label_s.text = "SALVAR COMO INDISPONIVEL"
+            return
+        try:
+            PythonActivity = autoclass("org.kivy.android.PythonActivity")
+            Intent = autoclass("android.content.Intent")
+            ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+            nome_arquivo = f"NeuralFaceHD_{ts}.jpg"
+
+            intent = Intent(Intent.ACTION_CREATE_DOCUMENT)
+            intent.addCategory(Intent.CATEGORY_OPENABLE)
+            intent.setType("image/jpeg")
+            intent.putExtra(Intent.EXTRA_TITLE, nome_arquivo)
+            PythonActivity.mActivity.startActivityForResult(intent, self.CREATE_FILE_REQUEST)
+        except Exception as e:
+            print("ERRO ABRIR SALVAR COMO:", e)
+            self.label_s.text = "ERRO AO ABRIR SALVAR COMO"
+
     def salvar_direto_galeria_android(self):
         if not ANDROID_OK or not self.arquivo_gerado_agora or not os.path.exists(self.arquivo_gerado_agora):
             return False
@@ -461,6 +480,9 @@ class TelaPrincipal(Screen):
                 path = self.copiar_uri_para_arquivo(uri)
                 if path:
                     Clock.schedule_once(lambda dt: self.select_path(path))
+            elif request_code == self.CREATE_FILE_REQUEST and uri is not None:
+                ok = self.salvar_em_uri(uri)
+                Clock.schedule_once(lambda dt: setattr(self.label_s, "text", "SALVO COM SUCESSO!" if ok else "ERRO AO SALVAR"))
 
         except:
             pass
@@ -517,20 +539,26 @@ class TelaPrincipal(Screen):
 
     def abrir_menu_salvamento(self, instance):
         content = MDBoxLayout(orientation="vertical", spacing=dp(12), padding=dp(10), adaptive_height=True)
-        btn = MDFillRoundFlatButton(text="SALVAR NA GALERIA", md_bg_color=self.cor_roxo_destaque, size_hint_x=1, on_release=self.salvar_escolhendo_pasta)
-        content.add_widget(btn)
+        btn_galeria = MDFillRoundFlatButton(text="SALVAR NA GALERIA", md_bg_color=self.cor_roxo_destaque, size_hint_x=1, on_release=self.salvar_escolhendo_pasta)
+        content.add_widget(btn_galeria)
+        if ANDROID_OK:
+            btn_escolher = MDRectangleFlatButton(text="ESCOLHER ONDE SALVAR", size_hint_x=1, on_release=self.salvar_escolhendo_local)
+            content.add_widget(btn_escolher)
         self.dialogo_save_choice = MDDialog(title="Imagem Pronta!", type="custom", content_cls=content)
         self.dialogo_save_choice.open()
 
     def salvar_escolhendo_pasta(self, instance):
         if self.dialogo_save_choice: self.dialogo_save_choice.dismiss()
-        if not self.garantir_permissoes_salvar():
-            self.label_s.text = "PERMISSAO NEGADA"
-            return
+        tem_permissao = self.garantir_permissoes_salvar()
         if self.salvar_direto_galeria_android():
             self.label_s.text = "SALVO COM SUCESSO!"
         else:
-            self.label_s.text = "ERRO AO SALVAR"
+            self.label_s.text = "PERMISSAO NEGADA" if not tem_permissao else "ERRO AO SALVAR"
+
+    def salvar_escolhendo_local(self, instance):
+        if self.dialogo_save_choice:
+            self.dialogo_save_choice.dismiss()
+        self.abrir_salvar_como_android()
 
     def garantir_permissoes_salvar(self):
         if not ANDROID_OK:
@@ -566,7 +594,8 @@ class TelaPrincipal(Screen):
             return all(check_permission(p) for p in faltando)
         except Exception as e:
             print("ERRO PERMISSAO SALVAR:", e)
-            return False
+            # Nao bloqueia o fluxo de salvar por falha na checagem.
+            return True
 
     def processo_servidor(self):
         try:
