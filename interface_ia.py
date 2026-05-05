@@ -251,6 +251,7 @@ class TelaPrincipal(Screen):
 
     def on_enter(self):
         self.atualizar_saldo_ui()
+        self.label_s.text = f"ANDROID_OK={ANDROID_OK}"
         if BUILD_CHECK_ENABLED:
             # Marcador temporario para validar se o AAB veio deste codigo.
             self.label_s.text = BUILD_CHECK_TAG
