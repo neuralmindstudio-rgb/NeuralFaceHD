@@ -63,6 +63,8 @@ except Exception as e:
     bd = None
 
 tutorial_store = JsonStore('tutorial_status.json')
+BUILD_CHECK_ENABLED = True
+BUILD_CHECK_TAG = "BUILD NOVO 09:44"
 
 class TelaPrincipal(Screen):
     PICK_IMAGE_REQUEST = 1001
@@ -123,7 +125,19 @@ class TelaPrincipal(Screen):
         self.btn_salvar.bind(on_release=self.abrir_menu_salvamento)
 
         # AJUSTE: Centralização das letras de status na barra
-        self.lbl_rede = Label(text="OFFLINE", color=(1, 0, 0, 1), font_size='9sp', bold=True, size_hint_y=None, height=dp(30), pos_hint={'center_y': 0.5})
+        self.lbl_rede = Label(
+            text="OFFLINE",
+            color=(1, 0, 0, 1),
+            font_size='9sp',
+            bold=True,
+            size_hint=(None, 1),
+            width=dp(84),
+            halign="center",
+            valign="middle",
+            padding=(0, dp(-6)),
+            pos_hint={'center_y': 0.44},
+        )
+        self.lbl_rede.bind(size=lambda inst, val: setattr(inst, "text_size", val))
         
         self.btn_mais = MDIconButton(icon="dots-vertical", theme_text_color="Custom", text_color=(1, 1, 1, 1))
         self.btn_mais.bind(on_release=self.abrir_menu)
@@ -226,6 +240,11 @@ class TelaPrincipal(Screen):
 
     def on_enter(self):
         self.atualizar_saldo_ui()
+        if BUILD_CHECK_ENABLED:
+            # Marcador temporario para validar se o AAB veio deste codigo.
+            self.label_s.text = BUILD_CHECK_TAG
+            print(f"[BUILD_CHECK] tag={BUILD_CHECK_TAG}")
+            print(f"[BUILD_CHECK] arquivo={__file__}")
         Clock.schedule_once(lambda dt: self.checar_termos_no_firebase(), 1)
         if self.th is None or not self.th.is_alive():
             self.th = threading.Thread(target=self.checar_conexao_loop, daemon=True)
