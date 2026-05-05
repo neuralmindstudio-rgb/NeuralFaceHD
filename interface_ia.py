@@ -135,7 +135,7 @@ class TelaPrincipal(Screen):
         self.btn_salvar.bind(on_release=self.abrir_menu_salvamento)
 
         # AJUSTE: Centralização das letras de status na barra
-        self.lbl_rede = Label(
+        self.lbl_rede = (
             text="OFFLINE",
             color=(1, 0, 0, 1),
             font_size='9sp',
@@ -208,7 +208,7 @@ class TelaPrincipal(Screen):
             pos_hint={'x': 0, 'y': 0.05} 
         )
 
-        self.label_s = Label(text="Neural Face HD", color=(0.5, 0.5, 0.6, 1), font_size='11sp', size_hint_y=None, height=dp(18))
+        self.label_s = Label(text="Neural Face HD teste codigo novo", color=(0.5, 0.5, 0.6, 1), font_size='11sp', size_hint_y=None, height=dp(18))
 
         l1 = BoxLayout(spacing=dp(10), size_hint_y=None, height=dp(44))
         self.btn_b = MDRoundFlatIconButton(text="BASE", icon="image-plus", size_hint_x=0.5)
