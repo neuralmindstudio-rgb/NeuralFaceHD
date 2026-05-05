@@ -17,7 +17,7 @@ jobs:
           python - << 'PY'
           from pathlib import Path
           txt = Path("interface_ia.py").read_text(encoding="utf-8", errors="ignore")
-          marker = "NeuralFaceHD teste codigo novo"
+          marker = 'BUILD_CHECK_TAG = "BUILD NOVO 09:44"'
           print("marker encontrado:", marker in txt)
           if marker not in txt:
               raise SystemExit("ERRO: interface_ia.py no runner nao tem o marker")
