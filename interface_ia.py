@@ -59,6 +59,13 @@ except Exception:
     run_on_ui_thread = None
 
 try:
+    from android.permissions import request_permissions, check_permission, Permission
+except Exception:
+    request_permissions = None
+    check_permission = None
+    Permission = None
+
+try:
     import banco_dados as bd
 except Exception as e:
     bd = None
@@ -201,7 +208,7 @@ class TelaPrincipal(Screen):
             pos_hint={'x': 0, 'y': 0.05} 
         )
 
-        self.label_s = Label(text="Neural Face HD teste de codigo novo", color=(0.5, 0.5, 0.6, 1), font_size='11sp', size_hint_y=None, height=dp(18))
+        self.label_s = Label(text="Neural Face HD", color=(0.5, 0.5, 0.6, 1), font_size='11sp', size_hint_y=None, height=dp(18))
 
         l1 = BoxLayout(spacing=dp(10), size_hint_y=None, height=dp(44))
         self.btn_b = MDRoundFlatIconButton(text="BASE", icon="image-plus", size_hint_x=0.5)
@@ -516,10 +523,43 @@ class TelaPrincipal(Screen):
 
     def salvar_escolhendo_pasta(self, instance):
         if self.dialogo_save_choice: self.dialogo_save_choice.dismiss()
+        if not self.garantir_permissoes_salvar():
+            self.label_s.text = "PERMISSAO NEGADA"
+            return
         if self.salvar_direto_galeria_android():
             self.label_s.text = "SALVO COM SUCESSO!"
         else:
             self.label_s.text = "ERRO AO SALVAR"
+
+    def garantir_permissoes_salvar(self):
+        if not ANDROID_OK:
+            return False
+        if not request_permissions or not check_permission or not Permission:
+            return True
+        try:
+            permissoes = []
+            if hasattr(Permission, "WRITE_EXTERNAL_STORAGE"):
+                permissoes.append(Permission.WRITE_EXTERNAL_STORAGE)
+            if hasattr(Permission, "READ_EXTERNAL_STORAGE"):
+                permissoes.append(Permission.READ_EXTERNAL_STORAGE)
+            if hasattr(Permission, "READ_MEDIA_IMAGES"):
+                permissoes.append(Permission.READ_MEDIA_IMAGES)
+
+            faltando = [p for p in permissoes if p and not check_permission(p)]
+            if not faltando:
+                return True
+
+            request_permissions(faltando)
+
+            # Aguarda um pequeno intervalo para o SO aplicar a resposta.
+            for _ in range(6):
+                time.sleep(0.2)
+                if all(check_permission(p) for p in faltando):
+                    return True
+            return all(check_permission(p) for p in faltando)
+        except Exception as e:
+            print("ERRO PERMISSAO SALVAR:", e)
+            return False
 
     def processo_servidor(self):
         try:
