@@ -147,7 +147,7 @@ class TelaPrincipal(Screen):
             margem_baixo = dp(25)
 
             largura = Window.width - (margem_lateral * 2)
-            y_baixo = self.painel.y + self.painel.height - dp(50)
+            y_baixo = self.painel.y + self.painel.height + dp(2)
             y_topo = self.barra_t.y - margem_topo
             altura = max(dp(250), y_topo - y_baixo)
 
