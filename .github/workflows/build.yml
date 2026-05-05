@@ -12,6 +12,17 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Falhar se nao for o codigo novo
+        run: |
+          python - << 'PY'
+          from pathlib import Path
+          txt = Path("interface_ia.py").read_text(encoding="utf-8", errors="ignore")
+          marker = "NeuralFaceHD teste codigo novo"
+          print("marker encontrado:", marker in txt)
+          if marker not in txt:
+              raise SystemExit("ERRO: interface_ia.py no runner nao tem o marker")
+          PY
+
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
