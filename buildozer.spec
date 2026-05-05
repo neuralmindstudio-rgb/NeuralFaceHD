@@ -39,7 +39,7 @@ icon.filename = logo.png
 presplash.filename = splash.png
 
 # Requisitos do Python (Mantendo suas correções)
-requirements = python3,kivy==2.3.0,kivymd==1.1.1,requests,urllib3,certifi,pyrebase4,pycryptodome,cryptography,pillow
+requirements = python3,kivy==2.3.0,kivymd==1.1.1,requests,urllib3,certifi,pyrebase4,pycryptodome,cryptography,pillow,pyjnius
 
 # Configurações de Build
 log_level = 2
