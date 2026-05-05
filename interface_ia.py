@@ -8,6 +8,8 @@ import gc
 from datetime import datetime
 import uuid
 
+BUILD_MARKER = "NeuralFaceHD teste codigo novo"
+
 from kivy.metrics import dp
 from kivy.clock import Clock
 from kivy.uix.image import Image
