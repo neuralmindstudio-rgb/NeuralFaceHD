@@ -6,6 +6,7 @@ import threading
 import socket
 import gc  
 from datetime import datetime
+import uuid
 
 from kivy.metrics import dp
 from kivy.clock import Clock
@@ -136,8 +137,8 @@ class TelaPrincipal(Screen):
             width=dp(84),
             halign="center",
             valign="middle",
-            padding=(0, dp(-6)),
-            pos_hint={'center_y': 0.44},
+            padding=(0, dp(-10)),
+            pos_hint={'center_y': 0.38},
         )
         self.lbl_rede.bind(size=lambda inst, val: setattr(inst, "text_size", val))
         
@@ -370,60 +371,58 @@ class TelaPrincipal(Screen):
             ContentValues = autoclass("android.content.ContentValues")
             MediaStore = autoclass("android.provider.MediaStore")
             Build = autoclass("android.os.Build")
-            Environment = autoclass("android.os.Environment")
             MediaScannerConnection = autoclass("android.media.MediaScannerConnection")
 
             resolver = PythonActivity.mActivity.getContentResolver()
-            ts = datetime.now().strftime("%Y%m%d_%H%M%S")
-            nome_arquivo = f"NeuralFaceHD_{ts}.jpg"
+            ts = datetime.now().strftime("%Y%m%d_%H%M%S_%f")[:-3]
+            sufixo = uuid.uuid4().hex[:6]
+            nome_arquivo = f"NeuralFaceHD_{ts}_{sufixo}.jpg"
             caminho_fallback = os.path.join("/storage/emulated/0/Pictures/NeuralFaceHD", nome_arquivo)
 
-            values = ContentValues()
-            values.put(MediaStore.MediaColumns.DISPLAY_NAME, nome_arquivo)
-            values.put(MediaStore.MediaColumns.MIME_TYPE, "image/jpeg")
-
+            # Android 10+ (API 29+): usa MediaStore sem precisar pedir nome ao usuario.
             if Build.VERSION.SDK_INT >= 29:
-                values.put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_PICTURES + "/NeuralFaceHD")
+                values = ContentValues()
+                values.put(MediaStore.MediaColumns.DISPLAY_NAME, nome_arquivo)
+                values.put(MediaStore.MediaColumns.MIME_TYPE, "image/jpeg")
+                values.put(MediaStore.MediaColumns.RELATIVE_PATH, "Pictures/NeuralFaceHD")
                 values.put(MediaStore.MediaColumns.IS_PENDING, 1)
 
-            uri = resolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values)
-            if uri is None:
-                return self._salvar_fallback_arquivo(caminho_fallback)
+                uri = resolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values)
+                if uri is None:
+                    return False
 
-            stream = resolver.openOutputStream(uri, "w")
-            if stream is None:
-                return self._salvar_fallback_arquivo(caminho_fallback)
+                stream = resolver.openOutputStream(uri, "w")
+                if stream is None:
+                    return False
 
-            try:
-                with open(self.arquivo_gerado_agora, "rb") as origem:
-                    shutil.copyfileobj(origem, stream)
-                stream.flush()
-            finally:
-                stream.close()
+                try:
+                    with open(self.arquivo_gerado_agora, "rb") as origem:
+                        shutil.copyfileobj(origem, stream)
+                    stream.flush()
+                finally:
+                    stream.close()
 
-            if Build.VERSION.SDK_INT >= 29:
                 values.clear()
                 values.put(MediaStore.MediaColumns.IS_PENDING, 0)
                 resolver.update(uri, values, None, None)
 
-            MediaScannerConnection.scanFile(
-                PythonActivity.mActivity,
-                [caminho_fallback],
-                ["image/jpeg"],
-                None
-            )
-            Cache.remove("kv.image"); Cache.remove("kv.texture"); gc.collect()
-            return True
+                Cache.remove("kv.image"); Cache.remove("kv.texture"); gc.collect()
+                return True
+
+            # Android 9 ou menor: salva em Pictures e dispara indexacao da galeria.
+            if self._salvar_fallback_arquivo(caminho_fallback):
+                MediaScannerConnection.scanFile(
+                    PythonActivity.mActivity,
+                    [caminho_fallback],
+                    ["image/jpeg"],
+                    None
+                )
+                Cache.remove("kv.image"); Cache.remove("kv.texture"); gc.collect()
+                return True
+            return False
         except Exception as e:
             print("ERRO SALVAR GALERIA:", e)
-            try:
-                ts = datetime.now().strftime("%Y%m%d_%H%M%S")
-                nome_arquivo = f"NeuralFaceHD_{ts}.jpg"
-                caminho_fallback = os.path.join("/storage/emulated/0/Pictures/NeuralFaceHD", nome_arquivo)
-                return self._salvar_fallback_arquivo(caminho_fallback)
-            except Exception as e2:
-                print("ERRO FALLBACK SALVAR GALERIA:", e2)
-                return False
+            return False
 
     def _salvar_fallback_arquivo(self, destino):
         try:
