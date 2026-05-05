@@ -538,13 +538,19 @@ class TelaPrincipal(Screen):
         if not request_permissions or not check_permission or not Permission:
             return True
         try:
+            Build = autoclass("android.os.Build")
+            sdk = int(Build.VERSION.SDK_INT)
+
+            # Android 10+ grava via MediaStore sem exigir WRITE_EXTERNAL_STORAGE.
+            # Em Android 13+, READ_MEDIA_IMAGES e para leitura; para salvar nao e obrigatorio.
+            if sdk >= 29:
+                return True
+
             permissoes = []
-            if hasattr(Permission, "WRITE_EXTERNAL_STORAGE"):
+            if hasattr(Permission, "WRITE_EXTERNAL_STORAGE") and Permission.WRITE_EXTERNAL_STORAGE:
                 permissoes.append(Permission.WRITE_EXTERNAL_STORAGE)
-            if hasattr(Permission, "READ_EXTERNAL_STORAGE"):
+            if hasattr(Permission, "READ_EXTERNAL_STORAGE") and Permission.READ_EXTERNAL_STORAGE:
                 permissoes.append(Permission.READ_EXTERNAL_STORAGE)
-            if hasattr(Permission, "READ_MEDIA_IMAGES"):
-                permissoes.append(Permission.READ_MEDIA_IMAGES)
 
             faltando = [p for p in permissoes if p and not check_permission(p)]
             if not faltando:
