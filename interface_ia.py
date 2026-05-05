@@ -137,8 +137,8 @@ class TelaPrincipal(Screen):
             width=dp(84),
             halign="center",
             valign="middle",
-            padding=(0, dp(-10)),
-            pos_hint={'center_y': 0.38},
+            padding=(0, dp(-14)),
+            pos_hint={'center_y': 0.34},
         )
         self.lbl_rede.bind(size=lambda inst, val: setattr(inst, "text_size", val))
         
@@ -383,16 +383,19 @@ class TelaPrincipal(Screen):
             if Build.VERSION.SDK_INT >= 29:
                 values = ContentValues()
                 values.put(MediaStore.MediaColumns.DISPLAY_NAME, nome_arquivo)
+                values.put(MediaStore.MediaColumns.TITLE, nome_arquivo)
                 values.put(MediaStore.MediaColumns.MIME_TYPE, "image/jpeg")
                 values.put(MediaStore.MediaColumns.RELATIVE_PATH, "Pictures/NeuralFaceHD")
                 values.put(MediaStore.MediaColumns.IS_PENDING, 1)
 
                 uri = resolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values)
                 if uri is None:
+                    print("ERRO SALVAR GALERIA: resolver.insert retornou URI nula")
                     return False
 
-                stream = resolver.openOutputStream(uri, "w")
+                stream = resolver.openOutputStream(uri)
                 if stream is None:
+                    print("ERRO SALVAR GALERIA: openOutputStream retornou None")
                     return False
 
                 try:
@@ -405,6 +408,7 @@ class TelaPrincipal(Screen):
                 values.clear()
                 values.put(MediaStore.MediaColumns.IS_PENDING, 0)
                 resolver.update(uri, values, None, None)
+                print(f"SALVO GALERIA (MediaStore): {nome_arquivo}")
 
                 Cache.remove("kv.image"); Cache.remove("kv.texture"); gc.collect()
                 return True
@@ -417,6 +421,7 @@ class TelaPrincipal(Screen):
                     ["image/jpeg"],
                     None
                 )
+                print(f"SALVO GALERIA (fallback): {caminho_fallback}")
                 Cache.remove("kv.image"); Cache.remove("kv.texture"); gc.collect()
                 return True
             return False
@@ -478,16 +483,22 @@ class TelaPrincipal(Screen):
     def select_path(self, path):
         self.imagem_final_pronta = False
         self.arquivo_gerado_agora = ""
-        self.ultima_foto_selecionada = path
         self.btn_salvar.disabled = True
 
         if self.tipo_atual == "base":
+            self.ultima_foto_selecionada = path
             self.path_base = path; self.face_index = 0
             self.btn_idx.text = f"TROCAR ROSTO ({self.face_index})"
             self.recriar_widget_imagem(path)
         else:
             self.path_rosto = path
-            self.recriar_widget_imagem(path)
+            # Mantem a base visivel quando o usuario seleciona o rosto.
+            if self.path_base and os.path.exists(self.path_base):
+                self.ultima_foto_selecionada = self.path_base
+                self.recriar_widget_imagem(self.path_base)
+            else:
+                self.ultima_foto_selecionada = path
+                self.recriar_widget_imagem(path)
 
     def recriar_widget_imagem(self, path):
         self.area_foto.clear_widgets()
