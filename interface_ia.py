@@ -125,7 +125,7 @@ class TelaPrincipal(Screen):
             size_hint=(1, None),
             height=dp(90),          
             spacing=dp(10),
-            padding=[dp(10), dp(15), dp(10), dp(5)], 
+            padding=[dp(10), dp(15), dp(2), dp(5)], 
             pos_hint={'top': 1}
         )
 
@@ -504,16 +504,29 @@ class TelaPrincipal(Screen):
             if not self.arquivo_gerado_agora or not os.path.exists(self.arquivo_gerado_agora):
                 print("ERRO SALVAR URI: arquivo gerado indisponivel")
                 return False
+            tamanho_origem = os.path.getsize(self.arquivo_gerado_agora)
+            if tamanho_origem <= 0:
+                print("ERRO SALVAR URI: arquivo origem vazio")
+                return False
             PythonActivity = autoclass('org.kivy.android.PythonActivity')
             resolver = PythonActivity.mActivity.getContentResolver()
-            pfd = resolver.openFileDescriptor(uri, "w")
+            pfd = resolver.openFileDescriptor(uri, "rwt")
             if pfd is None:
                 print("ERRO SALVAR URI: openFileDescriptor retornou None")
                 return False
 
+            bytes_escritos = 0
             with open(self.arquivo_gerado_agora, "rb") as origem, os.fdopen(pfd.detachFd(), "wb") as destino:
-                shutil.copyfileobj(origem, destino)
+                while True:
+                    chunk = origem.read(1024 * 1024)
+                    if not chunk:
+                        break
+                    destino.write(chunk)
+                    bytes_escritos += len(chunk)
                 destino.flush()
+            if bytes_escritos <= 0:
+                print("ERRO SALVAR URI: nenhum byte escrito")
+                return False
 
             Cache.remove('kv.image'); Cache.remove('kv.texture'); gc.collect()
             return True
@@ -549,25 +562,18 @@ class TelaPrincipal(Screen):
         self.area_foto.add_widget(self.img_preview)
 
     def abrir_menu_salvamento(self, instance):
-        content = MDBoxLayout(orientation="vertical", spacing=dp(12), padding=dp(10), adaptive_height=True)
-        btn_galeria = MDFillRoundFlatButton(text="SALVAR NA GALERIA", md_bg_color=self.cor_roxo_destaque, size_hint_x=1, on_release=self.salvar_escolhendo_pasta)
-        content.add_widget(btn_galeria)
-        if ANDROID_OK:
-            btn_escolher = MDRectangleFlatButton(text="ESCOLHER ONDE SALVAR", size_hint_x=1, on_release=self.salvar_escolhendo_local)
-            content.add_widget(btn_escolher)
+        content = MDBoxLayout(orientation="vertical", spacing=dp(12), padding=[dp(12), dp(8), dp(12), dp(8)], adaptive_height=True)
+        btn_escolher = MDFillRoundFlatButton(
+            text="ESCOLHER ONDE SALVAR",
+            md_bg_color=self.cor_roxo_destaque,
+            size_hint=(None, None),
+            width=dp(250),
+            pos_hint={"center_x": 0.5},
+            on_release=self.salvar_escolhendo_local
+        )
+        content.add_widget(btn_escolher)
         self.dialogo_save_choice = MDDialog(title="Imagem Pronta!", type="custom", content_cls=content)
         self.dialogo_save_choice.open()
-
-    def salvar_escolhendo_pasta(self, instance):
-        if self.dialogo_save_choice: self.dialogo_save_choice.dismiss()
-        if not self.arquivo_gerado_agora or not os.path.exists(self.arquivo_gerado_agora):
-            self.label_s.text = "IMAGEM INDISPONIVEL"
-            return
-        tem_permissao = self.garantir_permissoes_salvar()
-        if self.salvar_direto_galeria_android():
-            self.label_s.text = "SALVO COM SUCESSO!"
-        else:
-            self.label_s.text = "PERMISSAO NEGADA" if not tem_permissao else "ERRO AO SALVAR"
 
     def salvar_escolhendo_local(self, instance):
         if self.dialogo_save_choice:
