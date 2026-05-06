@@ -71,9 +71,6 @@ except Exception as e:
     bd = None
 
 tutorial_store = JsonStore('tutorial_status.json')
-BUILD_MARKER = "NeuralFaceHD teste codigo novo"
-BUILD_CHECK_ENABLED = True
-BUILD_CHECK_TAG = "BUILD NOVO 09:44"
 
 class TelaPrincipal(Screen):
     PICK_IMAGE_REQUEST = 1001
@@ -251,12 +248,7 @@ class TelaPrincipal(Screen):
 
     def on_enter(self):
         self.atualizar_saldo_ui()
-        self.label_s.text = f"ANDROID_OK={ANDROID_OK}"
-        if BUILD_CHECK_ENABLED:
-            # Marcador temporario para validar se o AAB veio deste codigo.
-            self.label_s.text = BUILD_CHECK_TAG
-            print(f"[BUILD_CHECK] tag={BUILD_CHECK_TAG}")
-            print(f"[BUILD_CHECK] arquivo={__file__}")
+        self.label_s.text = "Neural Face HD"
         Clock.schedule_once(lambda dt: self.checar_termos_no_firebase(), 1)
         if self.th is None or not self.th.is_alive():
             self.th = threading.Thread(target=self.checar_conexao_loop, daemon=True)
@@ -380,16 +372,35 @@ class TelaPrincipal(Screen):
             PythonActivity = autoclass("org.kivy.android.PythonActivity")
             Intent = autoclass("android.content.Intent")
             ts = datetime.now().strftime("%Y%m%d_%H%M%S")
-            nome_arquivo = f"NeuralFaceHD_{ts}.jpg"
+            ext, mime = self.detectar_formato_imagem(self.arquivo_gerado_agora)
+            nome_arquivo = f"NeuralFaceHD_{ts}.{ext}"
 
             intent = Intent(Intent.ACTION_CREATE_DOCUMENT)
             intent.addCategory(Intent.CATEGORY_OPENABLE)
-            intent.setType("image/jpeg")
+            intent.setType(mime)
             intent.putExtra(Intent.EXTRA_TITLE, nome_arquivo)
             PythonActivity.mActivity.startActivityForResult(intent, self.CREATE_FILE_REQUEST)
         except Exception as e:
             print("ERRO ABRIR SALVAR COMO:", e)
             self.label_s.text = "ERRO AO ABRIR SALVAR COMO"
+
+    def detectar_formato_imagem(self, caminho):
+        try:
+            if not caminho or not os.path.exists(caminho):
+                return ("jpg", "image/jpeg")
+            with open(caminho, "rb") as f:
+                cabecalho = f.read(32)
+
+            if cabecalho.startswith(b"\xff\xd8\xff"):
+                return ("jpg", "image/jpeg")
+            if cabecalho.startswith(b"\x89PNG\r\n\x1a\n"):
+                return ("png", "image/png")
+            if cabecalho.startswith(b"RIFF") and b"WEBP" in cabecalho:
+                return ("webp", "image/webp")
+            return ("jpg", "image/jpeg")
+        except Exception as e:
+            print("ERRO DETECTAR FORMATO:", e)
+            return ("jpg", "image/jpeg")
 
     def salvar_direto_galeria_android(self):
         if not ANDROID_OK or not self.arquivo_gerado_agora or not os.path.exists(self.arquivo_gerado_agora):
