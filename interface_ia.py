@@ -102,6 +102,7 @@ class TelaPrincipal(Screen):
         self.ultima_foto_selecionada = ""
         self.combo_credito_pago = None
         self.deve_cobrar_credito_rodada = True
+        self.dialogo_tutorial = None
 
         self.file_manager = MDFileManager(
             exit_manager=self.fechar_seletor,
@@ -242,7 +243,8 @@ class TelaPrincipal(Screen):
         Clock.schedule_once(ajustar_area_central, 0.5)
         Clock.schedule_once(ajustar_area_central, 1.5)
 
-        menu_items = [{"viewclass": "OneLineListItem", "text": "Termos de Uso", "on_release": lambda x="Termos": self.menu_callback(x)},
+        menu_items = [{"viewclass": "OneLineListItem", "text": "Tutorial", "on_release": lambda x="Tutorial": self.menu_callback(x)},
+                      {"viewclass": "OneLineListItem", "text": "Termos de Uso", "on_release": lambda x="Termos": self.menu_callback(x)},
                       {"viewclass": "OneLineListItem", "text": "Sobre", "on_release": lambda x="Sobre": self.menu_callback(x)}]
         self.dropdown = MDDropdownMenu(caller=self.btn_mais, items=menu_items, width_mult=4)
 
@@ -250,9 +252,49 @@ class TelaPrincipal(Screen):
         self.atualizar_saldo_ui()
         self.label_s.text = "Neural Face HD"
         Clock.schedule_once(lambda dt: self.checar_termos_no_firebase(), 1)
+        Clock.schedule_once(lambda dt: self.exibir_tutorial_se_necessario(), 0.6)
         if self.th is None or not self.th.is_alive():
             self.th = threading.Thread(target=self.checar_conexao_loop, daemon=True)
             self.th.start()
+
+    def exibir_tutorial_se_necessario(self, forcar=False):
+        if not forcar:
+            try:
+                if tutorial_store.exists("status") and tutorial_store.get("status").get("concluido", False):
+                    return
+            except Exception:
+                pass
+
+        texto = (
+            "[b]Bem-vindo ao Neural Face HD[/b]\n\n"
+            "1. Toque em [b]BASE[/b] e selecione a imagem principal.\n"
+            "2. Toque em [b]ROSTO[/b] para escolher o rosto que sera aplicado.\n"
+            "3. Use [b]TROCAR ROSTO[/b] para mudar o indice de deteccao facial.\n"
+            "4. Toque em [b]GERAR[/b] para processar na IA.\n"
+            "5. Quando concluir, use [b]SALVAR[/b] para exportar a imagem.\n\n"
+            "Dica: mantenha boa qualidade e iluminacao nas fotos para obter melhores resultados."
+        )
+
+        self.dialogo_tutorial = MDDialog(
+            title="Tutorial Rapido",
+            text=texto,
+            auto_dismiss=False,
+            buttons=[
+                MDFillRoundFlatButton(text="ENTENDI", on_release=self.marcar_tutorial_concluido)
+            ],
+        )
+        self.dialogo_tutorial.open()
+
+    def marcar_tutorial_concluido(self, *args):
+        try:
+            tutorial_store.put("status", concluido=True)
+        except Exception:
+            pass
+        if self.dialogo_tutorial:
+            self.dialogo_tutorial.dismiss()
+
+    def exibir_tutorial_forcado(self):
+        self.exibir_tutorial_se_necessario(forcar=True)
 
     def enviar_ao_pc(self, instance):
         if not self.servidor_online: self.label_s.text = "SERVIDOR OFFLINE"; return
@@ -336,7 +378,8 @@ class TelaPrincipal(Screen):
     def abrir_menu(self, instance): self.dropdown.open()
     def menu_callback(self, opcao):
         self.dropdown.dismiss()
-        if opcao == "Termos": self.exibir_termos_popup()
+        if opcao == "Tutorial": self.exibir_tutorial_forcado()
+        elif opcao == "Termos": self.exibir_termos_popup()
         elif opcao == "Sobre": MDDialog(title="Neural Mind Studio", text="Neural Face HD v1.0").open()
 
     def abrir_seletor_nativo(self, tipo):
