@@ -501,15 +501,25 @@ class TelaPrincipal(Screen):
 
     def salvar_em_uri(self, uri):
         try:
+            if not self.arquivo_gerado_agora or not os.path.exists(self.arquivo_gerado_agora):
+                print("ERRO SALVAR URI: arquivo gerado indisponivel")
+                return False
             PythonActivity = autoclass('org.kivy.android.PythonActivity')
             resolver = PythonActivity.mActivity.getContentResolver()
-            stream = resolver.openOutputStream(uri, "w")
-            with open(self.arquivo_gerado_agora, "rb") as origem:
-                shutil.copyfileobj(origem, stream)
-            stream.close()
+            pfd = resolver.openFileDescriptor(uri, "w")
+            if pfd is None:
+                print("ERRO SALVAR URI: openFileDescriptor retornou None")
+                return False
+
+            with open(self.arquivo_gerado_agora, "rb") as origem, os.fdopen(pfd.detachFd(), "wb") as destino:
+                shutil.copyfileobj(origem, destino)
+                destino.flush()
+
             Cache.remove('kv.image'); Cache.remove('kv.texture'); gc.collect()
             return True
-        except: return False
+        except Exception as e:
+            print("ERRO SALVAR URI:", e)
+            return False
 
     def select_path(self, path):
         self.imagem_final_pronta = False
@@ -550,6 +560,9 @@ class TelaPrincipal(Screen):
 
     def salvar_escolhendo_pasta(self, instance):
         if self.dialogo_save_choice: self.dialogo_save_choice.dismiss()
+        if not self.arquivo_gerado_agora or not os.path.exists(self.arquivo_gerado_agora):
+            self.label_s.text = "IMAGEM INDISPONIVEL"
+            return
         tem_permissao = self.garantir_permissoes_salvar()
         if self.salvar_direto_galeria_android():
             self.label_s.text = "SALVO COM SUCESSO!"
@@ -559,6 +572,9 @@ class TelaPrincipal(Screen):
     def salvar_escolhendo_local(self, instance):
         if self.dialogo_save_choice:
             self.dialogo_save_choice.dismiss()
+        if not self.arquivo_gerado_agora or not os.path.exists(self.arquivo_gerado_agora):
+            self.label_s.text = "IMAGEM INDISPONIVEL"
+            return
         self.abrir_salvar_como_android()
 
     def garantir_permissoes_salvar(self):
