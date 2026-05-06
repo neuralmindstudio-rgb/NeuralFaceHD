@@ -19,6 +19,30 @@ local_id = None
 ultimo_erro = ""
 
 
+def traduzir_erro_firebase(codigo):
+    mapa = {
+        "EMAIL_NOT_FOUND": "E-mail não encontrado.",
+        "INVALID_PASSWORD": "Senha incorreta.",
+        "USER_DISABLED": "Conta desativada.",
+        "INVALID_EMAIL": "E-mail inválido.",
+        "EMAIL_EXISTS": "Este e-mail já está cadastrado.",
+        "WEAK_PASSWORD": "Senha fraca. Use pelo menos 6 caracteres.",
+        "TOO_MANY_ATTEMPTS_TRY_LATER": "Muitas tentativas. Tente novamente mais tarde.",
+        "OPERATION_NOT_ALLOWED": "Operação não permitida.",
+        "MISSING_EMAIL": "Informe o e-mail.",
+        "MISSING_PASSWORD": "Informe a senha.",
+        "NETWORK_REQUEST_FAILED": "Falha de conexão com a internet.",
+        "LOGIN_FAILED": "Falha no login.",
+        "SIGNUP_FAILED": "Falha no cadastro.",
+        "RESET_FAILED": "Falha ao enviar recuperação de senha.",
+    }
+    return mapa.get(codigo, f"Erro no Firebase: {codigo}")
+
+
+def extrair_codigo_erro(data, fallback):
+    return data.get("error", {}).get("message", fallback)
+
+
 # =========================
 # 🔐 CLASSES (COMPATÍVEL COM SEU APP)
 # =========================
@@ -47,9 +71,9 @@ class FirebaseAuth:
                 ultimo_erro = ""
                 return data
             else:
-                erro = data.get("error", {}).get("message", "LOGIN_FAILED")
-                ultimo_erro = erro
-                raise Exception(erro)
+                erro = extrair_codigo_erro(data, "LOGIN_FAILED")
+                ultimo_erro = traduzir_erro_firebase(erro)
+                raise Exception(ultimo_erro)
 
         except Exception as e:
             ultimo_erro = str(e)
@@ -78,9 +102,9 @@ class FirebaseAuth:
                 ultimo_erro = ""
                 return data
             else:
-                erro = data.get("error", {}).get("message", "SIGNUP_FAILED")
-                ultimo_erro = erro
-                raise Exception(erro)
+                erro = extrair_codigo_erro(data, "SIGNUP_FAILED")
+                ultimo_erro = traduzir_erro_firebase(erro)
+                raise Exception(ultimo_erro)
 
         except Exception as e:
             ultimo_erro = str(e)
@@ -107,7 +131,8 @@ class FirebaseAuth:
                 return True
             else:
                 data = res.json()
-                ultimo_erro = data.get("error", {}).get("message", "RESET_FAILED")
+                erro = extrair_codigo_erro(data, "RESET_FAILED")
+                ultimo_erro = traduzir_erro_firebase(erro)
                 raise Exception(ultimo_erro)
 
         except Exception as e:
