@@ -211,13 +211,14 @@ class TelaCadastro(Screen):
         data_nasc_u = self.data_nasc.text.strip()
 
         try:
+            # 1) Cria conta e já obtém localId + idToken
             user = bd.auth.create_user_with_email_and_password(email_u, senha_u)
             u_id = user["localId"]
+            token = user["idToken"]
 
-            login_data = bd.auth.sign_in_with_email_and_password(email_u, senha_u)
-            id_token = login_data["idToken"]
-
-            bd.db.child("usuarios").child(u_id).set({
+            # 2) Salva os dados do usuário diretamente no caminho correto
+            url = f"{bd.DATABASE_URL}/usuarios/{u_id}.json?auth={token}"
+            payload = {
                 "nome": nome_u,
                 "email": email_u,
                 "data_nascimento": data_nasc_u,
@@ -225,7 +226,14 @@ class TelaCadastro(Screen):
                 "creditos": 5,
                 "aceitou_termos": False,
                 "bonus_primeiro_cadastro": True
-            }, id_token)
+            }
+
+            res = requests.put(url, json=payload, timeout=15)
+            if res.status_code >= 400:
+                raise Exception(f"Falha ao salvar usuário: {res.text}")
+
+            # 3) Login para garantir sessão global no app
+            bd.auth.sign_in_with_email_and_password(email_u, senha_u)
 
             print("CADASTRO COMPLETO OK:", u_id)
             Clock.schedule_once(lambda dt: self.sucesso_cadastro(), 0.1)
