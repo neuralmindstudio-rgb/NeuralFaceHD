@@ -8,7 +8,7 @@ source.include_exts = py,png,jpg,kv,atlas,json,onnx,keystore,ttf
 source.include_patterns = assets/*, gfpgan/*, *.onnx, images/*
 
 # VERSÃO OFICIAL DE LANÇAMENTO
-version = 1.0.0
+version = 1.0.1
 android.numeric_version = 158
 orientation = portrait
 fullscreen = 0
