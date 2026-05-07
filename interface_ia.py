@@ -5,6 +5,7 @@ import time
 import threading
 import socket
 import gc  
+import traceback
 from datetime import datetime
 import uuid
 
@@ -103,6 +104,7 @@ class TelaPrincipal(Screen):
         self.combo_credito_pago = None
         self.deve_cobrar_credito_rodada = True
         self.dialogo_tutorial = None
+        self.termos_popup_aberto = False
 
         self.file_manager = MDFileManager(
             exit_manager=self.fechar_seletor,
@@ -251,7 +253,7 @@ class TelaPrincipal(Screen):
     def on_enter(self):
         self.atualizar_saldo_ui()
         self.label_s.text = "Neural Face HD"
-        Clock.schedule_once(lambda dt: self.checar_termos_no_firebase(), 1)
+        Clock.schedule_once(lambda dt: threading.Thread(target=self.checar_termos_no_firebase, daemon=True).start(), 1)
         Clock.schedule_once(lambda dt: self.exibir_tutorial_se_necessario(), 0.6)
         if self.th is None or not self.th.is_alive():
             self.th = threading.Thread(target=self.checar_conexao_loop, daemon=True)
@@ -316,19 +318,48 @@ class TelaPrincipal(Screen):
         self.barra_p.opacity = 1; self.barra_p.start()
         threading.Thread(target=self.processo_servidor, daemon=True).start()
 
-    def salvar_aceite_firebase(self, *args):
+    def _log_erro(self, contexto, exc=None):
+        try:
+            app = App.get_running_app()
+            pasta_log = app.user_data_dir if app else os.getcwd()
+            os.makedirs(pasta_log, exist_ok=True)
+            arquivo_log = os.path.join(pasta_log, "crash.log")
+            with open(arquivo_log, "a", encoding="utf-8") as f:
+                f.write(f"\n[{datetime.now().isoformat()}] {contexto}\n")
+                if exc is not None:
+                    f.write(f"{type(exc).__name__}: {exc}\n")
+                    f.write(traceback.format_exc())
+        except Exception:
+            pass
+
+    def _fechar_dialogo_termos(self, *args):
+        self.termos_popup_aberto = False
+        if self.dialogo_termos:
+            try:
+                self.dialogo_termos.dismiss()
+            except Exception as e:
+                self._log_erro("Falha ao fechar dialogo de termos", e)
+        self.dialogo_termos = None
+
+    def _salvar_aceite_firebase_worker(self):
         if not bd or not bd.local_id:
-            if self.dialogo_termos: self.dialogo_termos.dismiss()
+            Clock.schedule_once(self._fechar_dialogo_termos)
             return
         try:
             url = f"{bd.DATABASE_URL}/usuarios/{bd.local_id}.json"
             if bd.id_token: url = f"{url}?auth={bd.id_token}"
             requests.patch(url, json={"aceitou_termos": True}, timeout=10)
-            if self.dialogo_termos: self.dialogo_termos.dismiss()
-        except:
-            if self.dialogo_termos: self.dialogo_termos.dismiss()
+        except Exception as e:
+            self._log_erro("Falha ao salvar aceite dos termos no Firebase", e)
+        finally:
+            Clock.schedule_once(self._fechar_dialogo_termos)
+
+    def salvar_aceite_firebase(self, *args):
+        threading.Thread(target=self._salvar_aceite_firebase_worker, daemon=True).start()
 
     def exibir_termos_popup(self):
+        if self.termos_popup_aberto:
+            return
         texto = (
             "[b]TERMOS DE USO E RESPONSABILIDADE LEGAL[/b]\n\n"
             "Ao utilizar o [b]Neural Face HD[/b], você declara ser maior de 18 "
@@ -350,23 +381,41 @@ class TelaPrincipal(Screen):
         lbl.bind(width=lambda ins, val: setattr(ins, 'text_size', (val - dp(20), None)))
         lbl.bind(texture_size=lambda ins, val: setattr(ins, 'height', val[1]))
         scroll.add_widget(lbl)
-        self.dialogo_termos = MDDialog(title="CONSENTIMENTO JURÍDICO", type="custom", content_cls=scroll, size_hint_x=0.9, auto_dismiss=False,
-            buttons=[
-                MDRectangleFlatButton(text="RECUSAR", text_color=(1,0,0,1), on_release=lambda x: (self.dialogo_termos.dismiss(), self.fazer_logout())),
-                MDFillRoundFlatButton(text="EU ACEITO", on_release=self.salvar_aceite_firebase)
-            ])
-        self.dialogo_termos.open()
+        try:
+            self.termos_popup_aberto = True
+            self.dialogo_termos = MDDialog(title="CONSENTIMENTO JURÍDICO", type="custom", content_cls=scroll, size_hint_x=0.9, auto_dismiss=False,
+                buttons=[
+                    MDRectangleFlatButton(text="RECUSAR", text_color=(1,0,0,1), on_release=lambda x: (self._fechar_dialogo_termos(), self.fazer_logout())),
+                    MDFillRoundFlatButton(text="EU ACEITO", on_release=self.salvar_aceite_firebase)
+                ])
+            self.dialogo_termos.open()
+        except Exception as e:
+            self.termos_popup_aberto = False
+            self._log_erro("Falha ao abrir popup de termos", e)
 
     def checar_termos_no_firebase(self):
-        if not bd or not bd.local_id: return
+        if not bd or not bd.local_id:
+            return
         try:
             url = f"{bd.DATABASE_URL}/usuarios/{bd.local_id}.json"
-            if bd.id_token: url = f"{url}?auth={bd.id_token}"
+            if bd.id_token:
+                url = f"{url}?auth={bd.id_token}"
             res = requests.get(url, timeout=10)
+            if res.status_code != 200:
+                self._log_erro(f"Resposta invalida ao checar termos: {res.status_code}")
+                return
+
             dados = res.json()
-            if not dados or not dados.get("aceitou_termos", False):
-                self.exibir_termos_popup()
-        except: pass
+            if dados is None:
+                dados = {}
+            if not isinstance(dados, dict):
+                self._log_erro(f"Formato invalido de dados de termos: {type(dados).__name__}")
+                return
+
+            if not dados.get("aceitou_termos", False):
+                Clock.schedule_once(lambda dt: self.exibir_termos_popup())
+        except Exception as e:
+            self._log_erro("Falha ao checar termos no Firebase", e)
 
     def atualizar_saldo_ui(self, *args):
         if not bd or not bd.local_id: self.btn_gerar.text = "GERAR (0)"; return
@@ -718,8 +767,12 @@ class TelaPrincipal(Screen):
         self.lbl_rede.color = (0, 1, 0, 1) if online else (1, 0, 0, 1)
 
     def fazer_logout(self, *args):
-        if bd: bd.current_user = None; bd.id_token = None; bd.local_id = None
-        self.manager.current = 'login'
+        if bd:
+            bd.current_user = None
+            bd.id_token = None
+            bd.local_id = None
+        if self.manager and self.manager.has_screen('login'):
+            self.manager.current = 'login'
 
     def alternar_rosto(self, instance):
         self.face_index = (self.face_index + 1) if self.face_index < 5 else 0
