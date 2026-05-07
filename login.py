@@ -31,6 +31,7 @@ class TelaLogin(Screen):
 
         Window.softinput_mode = "resize"
         Window.bind(on_keyboard=self.voltar_ao_login)
+        self._dialog_msg = None
 
         with self.canvas.before:
             Color(0, 0, 0, 1)
@@ -160,6 +161,18 @@ class TelaLogin(Screen):
 
         Clock.schedule_once(self.carregar_dados_salvos)
 
+    def _show_msg(self, titulo, texto):
+        try:
+            if self._dialog_msg:
+                self._dialog_msg.dismiss()
+        except Exception:
+            pass
+        try:
+            self._dialog_msg = MDDialog(title=titulo, text=texto)
+            self._dialog_msg.open()
+        except Exception as e:
+            print(f"Falha ao abrir dialogo: {e}")
+
     def on_pre_enter(self, *args):
         Window.softinput_mode = "resize"
 
@@ -215,17 +228,23 @@ class TelaLogin(Screen):
             pass
 
     def ir_para_registro(self):
-        self.manager.current = 'registro'
+        try:
+            if self.manager and self.manager.has_screen('registro'):
+                self.manager.current = 'registro'
+            else:
+                self._show_msg("Erro", "Tela de cadastro nao encontrada.")
+        except Exception as e:
+            self._show_msg("Erro", f"Falha ao abrir cadastro: {e}")
 
     def fazer_login(self, instance):
         print("Tentando login...")
 
         if not self.input_email.text or not self.input_senha.text:
-            MDDialog(title="Aviso", text="Preencha todos os campos.").open()
+            self._show_msg("Aviso", "Preencha todos os campos.")
             return
 
         if not bd:
-            MDDialog(title="Erro", text="Sistema de login indisponível.").open()
+            self._show_msg("Erro", "Sistema de login indisponível.")
             return
 
         try:
@@ -248,27 +267,27 @@ class TelaLogin(Screen):
                 self.manager.current = 'principal'
             else:
                 erro_real = getattr(bd, "ultimo_erro", "ERRO_DESCONHECIDO")
-                MDDialog(title="Erro", text=f"Login falhou: {erro_real}").open()
+                self._show_msg("Erro", f"Login falhou: {erro_real}")
 
         except Exception as e:
             print(f"Erro login: {e}")
-            MDDialog(title="Erro", text=f"Falha no login: {e}").open()
+            self._show_msg("Erro", f"Falha no login: {e}")
 
     def resetar_senha(self, instance):
         if not bd:
-            MDDialog(title="Erro", text="Recuperação indisponível.").open()
+            self._show_msg("Erro", "Recuperação indisponível.")
             return
 
         if self.input_email.text:
             try:
                 ok = bd.recuperar_senha(self.input_email.text.strip())
                 if ok:
-                    MDDialog(title="Sucesso", text="E-mail enviado.").open()
+                    self._show_msg("Sucesso", "E-mail enviado.")
                 else:
                     erro_real = getattr(bd, "ultimo_erro", "ERRO_DESCONHECIDO")
-                    MDDialog(title="Erro", text=f"Falha ao enviar: {erro_real}").open()
+                    self._show_msg("Erro", f"Falha ao enviar: {erro_real}")
             except Exception as e:
                 print(f"Erro resetar senha: {e}")
-                MDDialog(title="Erro", text=f"Falha ao enviar: {e}").open()
+                self._show_msg("Erro", f"Falha ao enviar: {e}")
         else:
-            MDDialog(title="Aviso", text="Digite o e-mail.").open()
+            self._show_msg("Aviso", "Digite o e-mail.")
