@@ -209,7 +209,7 @@ class TelaPrincipal(Screen):
             pos_hint={'x': 0, 'y': 0.05} 
         )
 
-        self.label_s = Label(text="Neural Face HD teste 07_05", color=(0.5, 0.5, 0.6, 1), font_size='11sp', size_hint_y=None, height=dp(18))
+        self.label_s = Label(text="Neural Face HD teste 14_59", color=(0.5, 0.5, 0.6, 1), font_size='11sp', size_hint_y=None, height=dp(18))
 
         l1 = BoxLayout(spacing=dp(10), size_hint_y=None, height=dp(44))
         self.btn_b = MDRoundFlatIconButton(text="BASE", icon="image-plus", size_hint_x=0.5)
@@ -377,9 +377,19 @@ class TelaPrincipal(Screen):
             "O uso indevido resultará em banimento imediato e cooperação total com autoridades judiciais."
         )
         scroll = ScrollView(size_hint=(1, None), height=dp(350))
-        lbl = Label(text=texto, markup=True, size_hint_y=None, color=(1,1,1,1), font_size='14sp', halign="left", valign="top", padding=(dp(10), dp(10)))
-        lbl.bind(width=lambda ins, val: setattr(ins, 'text_size', (val - dp(20), None)))
-        lbl.bind(texture_size=lambda ins, val: setattr(ins, 'height', val[1]))
+        lbl = Label(
+            text=texto,
+            markup=True,
+            size_hint_y=None,
+            color=(1, 1, 1, 1),
+            font_size='14sp',
+            halign="left",
+            valign="top",
+            padding=(dp(10), dp(10)),
+        )
+        # Em alguns aparelhos, larguras negativas no text_size disparam crash no renderer.
+        lbl.bind(width=lambda ins, val: setattr(ins, 'text_size', (max(dp(1), val - dp(20)), None)))
+        lbl.bind(texture_size=lambda ins, val: setattr(ins, 'height', max(dp(1), val[1])))
         scroll.add_widget(lbl)
         try:
             self.termos_popup_aberto = True
