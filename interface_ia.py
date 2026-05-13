@@ -123,7 +123,7 @@ class TelaPrincipal(Screen):
         self.barra_t = BoxLayout(
             orientation='horizontal',
             size_hint=(1, None),
-            height=dp(90),          
+            height=dp(82),
             spacing=dp(10),
             padding=[dp(10), dp(15), dp(2), dp(5)], 
             pos_hint={'top': 1}
@@ -135,20 +135,25 @@ class TelaPrincipal(Screen):
         self.btn_salvar = MDRoundFlatIconButton(text="SALVAR", icon="download", disabled=True)
         self.btn_salvar.bind(on_release=self.abrir_menu_salvamento)
 
-        # AJUSTE: Centralização das letras de status na barra
+        # Status da rede: dp (nao sp) evita texto maior que a celula com
+        # "Tamanho de letra" do Android alto — isso gerava text_size/layout invalido e crash.
         self.lbl_rede = Label(
             text="OFFLINE",
             color=(1, 0, 0, 1),
-            font_size='9sp',
+            font_size=dp(10),
             bold=True,
             size_hint=(None, 1),
-            width=dp(84),
+            width=dp(100),
             halign="center",
             valign="middle",
-            padding=(0, dp(-14)),
-            pos_hint={'center_y': 0.34},
+            padding=(0, 0),
+            pos_hint={'center_y': 0.5},
         )
-        self.lbl_rede.bind(size=lambda inst, val: setattr(inst, "text_size", val))
+        self.lbl_rede.bind(
+            size=lambda inst, val: setattr(
+                inst, "text_size", (max(1, int(val[0])), max(1, int(val[1])))
+            )
+        )
         
         self.btn_mais = MDIconButton(icon="dots-vertical", theme_text_color="Custom", text_color=(1, 1, 1, 1))
         self.btn_mais.bind(on_release=self.abrir_menu)
@@ -171,19 +176,36 @@ class TelaPrincipal(Screen):
             margem_topo = dp(4)
             margem_baixo = dp(0)
 
-            largura = Window.width - (margem_lateral * 2)
+            largura = max(dp(120), Window.width - (margem_lateral * 2))
             y_baixo = self.painel.y + self.painel.height + margem_baixo
             y_topo = self.barra_t.y - margem_topo
-            altura = max(dp(250), y_topo - y_baixo)
+            altura = max(dp(160), y_topo - y_baixo)
 
             self.meio.size = (largura, altura)
             self.meio.pos = (margem_lateral, y_baixo)
 
+        def ajustar_layout_responsivo(*args):
+            h = Window.height if Window.height > 100 else dp(640)
+            self.barra_t.height = max(dp(72), min(dp(100), h * 0.11))
+            base_p = max(dp(200), min(dp(300), h * 0.30))
+            try:
+                need = self._altura_necessaria_painel()
+            except Exception:
+                need = dp(220)
+            self.painel.height = max(base_p, need)
+
+        def reflow_painel_e_meio(dt=None):
+            ajustar_layout_responsivo()
+            ajustar_area_central()
+
+        trigger_reflow = Clock.create_trigger(lambda dt: reflow_painel_e_meio(), 0.05)
+
         Clock.schedule_once(ajustar_area_central, 0.3)
         Clock.schedule_once(ajustar_area_central, 1)
         Clock.schedule_once(ajustar_area_central, 2)
+        Clock.schedule_once(lambda dt: reflow_painel_e_meio(), 0)
         
-        Window.bind(size=ajustar_area_central)
+        Window.bind(size=lambda *a: trigger_reflow())
         self.barra_t.bind(pos=ajustar_area_central, size=ajustar_area_central)
 
         with self.meio.canvas.before:
@@ -203,15 +225,29 @@ class TelaPrincipal(Screen):
         self.painel = BoxLayout(
             orientation='vertical',
             size_hint=(1, None),
-            height=dp(185),
+            height=dp(240),
             padding=[dp(10), dp(5), dp(10), dp(5)],
             spacing=dp(5),
-            pos_hint={'x': 0, 'y': 0.05} 
+            pos_hint={'x': 0, 'y': 0.02} 
         )
 
-        self.label_s = Label(text="Neural Face HD teste 15_48", color=(0.5, 0.5, 0.6, 1), font_size='11sp', size_hint_y=None, height=dp(18))
+        self.label_s = Label(
+            text="Neural Face HD",
+            color=(0.5, 0.5, 0.6, 1),
+            font_size=dp(12),
+            size_hint_y=None,
+            height=dp(22),
+            halign="center",
+            valign="middle",
+        )
 
-        l1 = BoxLayout(spacing=dp(10), size_hint_y=None, height=dp(44))
+        def on_label_s_texture(inst, val):
+            inst.height = max(dp(20), val[1])
+            trigger_reflow()
+
+        self.label_s.bind(texture_size=on_label_s_texture)
+
+        l1 = BoxLayout(spacing=dp(10), size_hint_y=None, height=dp(54))
         self.btn_b = MDRoundFlatIconButton(text="BASE", icon="image-plus", size_hint_x=0.5)
         self.btn_b.bind(on_release=lambda x: self.abrir_seletor_nativo("base"))
         self.btn_r = MDRoundFlatIconButton(text="ROSTO", icon="face-man-profile", size_hint_x=0.5)
@@ -219,10 +255,10 @@ class TelaPrincipal(Screen):
         l1.add_widget(self.btn_b)
         l1.add_widget(self.btn_r)
 
-        self.btn_idx = MDRoundFlatIconButton(text="TROCAR ROSTO (0)", icon="account-switch", size_hint_x=1, height=dp(40))
+        self.btn_idx = MDRoundFlatIconButton(text="TROCAR ROSTO (0)", icon="account-switch", size_hint_x=1, height=dp(48))
         self.btn_idx.bind(on_release=self.alternar_rosto)
 
-        l2 = BoxLayout(spacing=dp(8), size_hint_y=None, height=dp(50))
+        l2 = BoxLayout(spacing=dp(8), size_hint_y=None, height=dp(58))
         self.btn_limpar = MDRectangleFlatButton(text="LIMPAR", size_hint_x=0.25)
         self.btn_limpar.bind(on_release=self.limpar_tudo)
         self.btn_gerar = MDFillRoundFlatButton(text="GERAR", md_bg_color=(0.5, 0, 0.8, 1), size_hint_x=0.45)
@@ -236,6 +272,9 @@ class TelaPrincipal(Screen):
         self.espacador_android = Widget(size_hint_y=None, height=0)
         self.painel.add_widget(self.espacador_android)
 
+        for _w in (self.label_s, l1, self.btn_idx, l2, self.espacador_android):
+            _w.bind(size=lambda *a: trigger_reflow())
+
         layout_geral.add_widget(self.meio)
         layout_geral.add_widget(self.painel)
         layout_geral.add_widget(self.barra_t)
@@ -244,22 +283,31 @@ class TelaPrincipal(Screen):
         self.painel.bind(pos=ajustar_area_central, size=ajustar_area_central)
         Clock.schedule_once(ajustar_area_central, 0.5)
         Clock.schedule_once(ajustar_area_central, 1.5)
+        Clock.schedule_once(lambda dt: reflow_painel_e_meio(), 0.6)
 
         menu_items = [{"viewclass": "OneLineListItem", "text": "Tutorial", "on_release": lambda x="Tutorial": self.menu_callback(x)},
                       {"viewclass": "OneLineListItem", "text": "Termos de Uso", "on_release": lambda x="Termos": self.menu_callback(x)},
                       {"viewclass": "OneLineListItem", "text": "Sobre", "on_release": lambda x="Sobre": self.menu_callback(x)}]
         self.dropdown = MDDropdownMenu(caller=self.btn_mais, items=menu_items, width_mult=4)
 
+    def _altura_necessaria_painel(self):
+        pl = self.painel
+        n = len(pl.children)
+        sep = max(0, n - 1) * pl.spacing
+        return pl.padding[1] + pl.padding[3] + sep + sum(c.height for c in pl.children)
+
     def on_enter(self):
         self.atualizar_saldo_ui()
         self.label_s.text = "Neural Face HD"
         Clock.schedule_once(lambda dt: threading.Thread(target=self.checar_termos_no_firebase, daemon=True).start(), 1)
-        Clock.schedule_once(lambda dt: self.exibir_tutorial_se_necessario(), 0.6)
         if self.th is None or not self.th.is_alive():
             self.th = threading.Thread(target=self.checar_conexao_loop, daemon=True)
             self.th.start()
 
     def exibir_tutorial_se_necessario(self, forcar=False):
+        # Evita sobreposicao de dialogs (causa comum de instabilidade em alguns devices).
+        if self.termos_popup_aberto or self.dialogo_termos:
+            return
         if not forcar:
             try:
                 if tutorial_store.exists("status") and tutorial_store.get("status").get("concluido", False):
@@ -294,6 +342,7 @@ class TelaPrincipal(Screen):
             pass
         if self.dialogo_tutorial:
             self.dialogo_tutorial.dismiss()
+            self.dialogo_tutorial = None
 
     def exibir_tutorial_forcado(self):
         self.exibir_tutorial_se_necessario(forcar=True)
@@ -360,29 +409,38 @@ class TelaPrincipal(Screen):
     def exibir_termos_popup(self):
         if self.termos_popup_aberto:
             return
+        if self.dialogo_tutorial:
+            try:
+                self.dialogo_tutorial.dismiss()
+            except Exception as e:
+                self._log_erro("Falha ao fechar tutorial antes dos termos", e)
+            self.dialogo_tutorial = None
         texto = (
-            "[b]TERMOS DE USO E RESPONSABILIDADE LEGAL[/b]\n\n"
-            "Ao utilizar o [b]Neural Face HD[/b], você declara ser maior de 18 "
+            "TERMOS DE USO E RESPONSABILIDADE LEGAL\n\n"
+            "Ao utilizar o Neural Face HD, voce declara ser maior de 18 "
             "anos e assume total responsabilidade civil e criminal pelo uso desta ferramenta, "
             "declarando estar ciente de:\n\n"
-            "1. [b]PROTEÇÃO À CRIANÇA (ECA):[/b] É terminantemente proibida a manipulação de "
+            "1. PROTECAO A CRIANCA (ECA): e proibida a manipulacao de "
             "imagens de menores de 18 anos. Violações estão sujeitas às penas da Lei 8.069/90 "
             "e da Lei 14.811/2024 (ECA Digital).\n\n"
-            "2. [b]DIREITO DE IMAGEM:[/b] Você declara possuir autorização legal e consensual "
+            "2. DIREITO DE IMAGEM: voce declara possuir autorizacao legal e consensual "
             "de todas as pessoas cujas faces serão processadas.\n\n"
-            "3. [b]USO ILÍCITO:[/b] Proibida a criação de conteúdo pornográfico (Deepnude), "
+            "3. USO ILICITO: proibida a criacao de conteudo pornografico (Deepnude), "
             "difamatório, político-eleitoral enganoso ou que promova ódio/violência.\n\n"
-            "4. [b]ISENÇÃO:[/b] O desenvolvedor fornece apenas a tecnologia. O usuário é o "
+            "4. ISENCAO: o desenvolvedor fornece apenas a tecnologia. O usuario e o "
             "único responsável pela destinação do conteúdo gerado.\n\n"
             "O uso indevido resultará em banimento imediato e cooperação total com autoridades judiciais."
         )
-        scroll = ScrollView(size_hint=(1, None), height=dp(350))
+        scroll = ScrollView(
+            size_hint=(1, None),
+            height=max(dp(120), min(dp(350), Window.height * 0.42)),
+        )
         lbl = Label(
             text=texto,
-            markup=True,
+            markup=False,
             size_hint_y=None,
             color=(1, 1, 1, 1),
-            font_size='14sp',
+            font_size=dp(12),
             halign="left",
             valign="top",
             padding=(dp(10), dp(10)),
@@ -424,6 +482,8 @@ class TelaPrincipal(Screen):
 
             if not dados.get("aceitou_termos", False):
                 Clock.schedule_once(lambda dt: self.exibir_termos_popup())
+            else:
+                Clock.schedule_once(lambda dt: self.exibir_tutorial_se_necessario(), 0.2)
         except Exception as e:
             self._log_erro("Falha ao checar termos no Firebase", e)
 
@@ -772,9 +832,12 @@ class TelaPrincipal(Screen):
             time.sleep(5)
 
     def atualizar_ui_servidor(self, online):
-        self.servidor_online = online
-        self.lbl_rede.text = "ONLINE" if online else "OFFLINE"
-        self.lbl_rede.color = (0, 1, 0, 1) if online else (1, 0, 0, 1)
+        try:
+            self.servidor_online = online
+            self.lbl_rede.text = "ONLINE" if online else "OFFLINE"
+            self.lbl_rede.color = (0, 1, 0, 1) if online else (1, 0, 0, 1)
+        except Exception:
+            pass
 
     def fazer_logout(self, *args):
         if bd:
