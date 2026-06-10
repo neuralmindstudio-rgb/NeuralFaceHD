@@ -9,7 +9,7 @@ source.include_patterns = assets/*, gfpgan/*, *.onnx, images/*
 
 # VERSÃO OFICIAL DE LANÇAMENTO
 version = 1.0.1
-android.numeric_version = 164
+android.numeric_version = 165
 orientation = portrait
 fullscreen = 0
 
@@ -39,7 +39,7 @@ icon.filename = logo.png
 presplash.filename = splash.png
 
 # Requisitos do Python (Mantendo suas correções)
-requirements = python3,kivy==2.3.0,kivymd==1.1.1,requests,urllib3,certifi,pyrebase4,pycryptodome,cryptography,pillow>=9.5,<11,pyjnius
+requirements = python3==3.11,kivy==2.3.0,kivymd==1.1.1,requests,urllib3,certifi,pyrebase4,pycryptodome,cryptography,pillow>=9.5,<11,pyjnius
 
 # Configurações de Build
 log_level = 2
