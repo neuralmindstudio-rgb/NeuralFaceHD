@@ -1,4 +1,4 @@
-name: Build APK e AAB - Neural Face HD
+name: Build APK - Neural Face HD
 
 on:
   push:
@@ -30,13 +30,16 @@ jobs:
           python -m pip install --upgrade pip
           pip install buildozer cython==0.29.33 setuptools appdirs packaging colorama jinja2 six toml sh build wheel
 
-      - name: Clean Buildozer Cache
+      - name: Force Clean Cache & Old Builds
         run: |
+          # Isso limpa completamente o cache do buildozer e evita o conflito de versão do Python
           rm -rf .buildozer
+          rm -rf bin/
+          find . -name "*.pyc" -delete
 
       - name: Build APK (Debug)
         run: |
-          # Como você pediu para gerar um APK primeiro para testar, usamos 'android debug'
+          # Executa o buildozer para gerar o APK de teste
           yes | buildozer -v android debug
 
           # Organizar os arquivos finais para download
