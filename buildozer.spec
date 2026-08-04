@@ -9,7 +9,7 @@ source.include_patterns = assets/*, gfpgan/*, *.onnx, images/*
 
 # VERSÃO OFICIAL DE LANÇAMENTO
 version = 1.0.1
-android.numeric_version = 167
+android.numeric_version = 168
 orientation = portrait
 fullscreen = 0
 
