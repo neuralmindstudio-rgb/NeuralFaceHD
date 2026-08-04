@@ -1,4 +1,4 @@
-name: Build APK - Neural Face HD
+name: Build APK e AAB - Neural Face HD
 
 on:
   push:
@@ -32,26 +32,25 @@ jobs:
 
       - name: Force Clean Cache & Old Builds
         run: |
-          # Isso limpa completamente o cache do buildozer e evita o conflito de versão do Python
           rm -rf .buildozer
           rm -rf bin/
-          find . -name "*.pyc" -delete
 
-      - name: Build APK (Debug)
+      - name: Build App (Debug APK ou Release AAB)
         run: |
-          # Executa o buildozer para gerar o APK de teste
+          # Executa o buildozer (lembrando que no seu spec está setado para aab, ou mude se preferir apk)
           yes | buildozer -v android debug
-
-          # Organizar os arquivos finais para download
-          mkdir -p bin_entrega
-          cp bin/*.apk bin_entrega/NeuralFaceHD_DEBUG.apk
         env:
           ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
+
+      - name: List files in bin to debug
+        if: always()
+        run: |
+          ls -la bin/ || true
 
       - name: Upload Artifact
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: NeuralFaceHD-APK-DEBUG
-          path: bin_entrega/
+          name: NeuralFaceHD-Binarios
+          path: bin/
       
