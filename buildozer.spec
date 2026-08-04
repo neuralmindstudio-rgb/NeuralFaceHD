@@ -28,6 +28,9 @@ android.copy_libs = 1
 android.release_artifact = aab
 p4a.bootstrap = sdl2
 
+# Versão do Python interna para o Android
+android.python_version = 3.11
+
 # --- ASSINATURA DA PLAY STORE (DADOS ATUALIZADOS) ---
 android.keystore = neuralface_oficial.keystore
 android.keystore_password = neural2026
@@ -38,8 +41,8 @@ android.keyalias_password = neural2026
 icon.filename = logo.png
 presplash.filename = splash.png
 
-# Requisitos do Python (Mantendo suas correções)
-requirements = python3==3.11,kivy==2.3.0,kivymd==1.1.1,requests,urllib3,certifi,pyrebase4,pycryptodome,cryptography,pillow>=9.5,<11,pyjnius
+# Requisitos do Python (Corrigido para evitar o erro de hostpython)
+requirements = python3,kivy==2.3.0,kivymd==1.1.1,requests,urllib3,certifi,pyrebase4,pycryptodome,cryptography,pillow>=9.5,<11,pyjnius
 
 # Configurações de Build
 log_level = 2
