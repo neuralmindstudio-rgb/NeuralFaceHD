@@ -1,4 +1,4 @@
-name: Build AAB Oficial Play Store
+name: Build APK e AAB - Neural Face HD
 
 on:
   push:
@@ -18,46 +18,30 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Set up Python
+      - name: Set up Python 3.11
         uses: actions/setup-python@v5
         with:
-          python-version: '3.10'
+          python-version: '3.11'
 
       - name: Install dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y build-essential libffi-dev python3-dev
-          pip install --upgrade pip
+          python -m pip install --upgrade pip
           pip install buildozer cython==0.29.33 setuptools appdirs packaging colorama jinja2 six toml sh build wheel
 
-      - name: Build and Sign AAB
+      - name: Clean Buildozer Cache
         run: |
-          # 1. CRIAR A CHAVE OFICIAL
-          keytool -genkey -noprompt \
-            -keystore neuralface_oficial.keystore \
-            -alias neural_oficial \
-            -storepass neural2026 \
-            -keypass neural2026 \
-            -keyalg RSA \
-            -keysize 2048 \
-            -validity 10000 \
-            -dname "CN=Anderson, OU=Neural, O=Neural, L=Lages, S=SC, C=BR"
+          rm -rf .buildozer
 
-          # 2. GERAR O AAB (O Buildozer assina automaticamente Bundles no modo release)
-          # Usamos o export para garantir que o processo filho do Android SDK enxergue as senhas
-          export APP_ANDROID_KEYSTORE=neuralface_oficial.keystore
-          export APP_ANDROID_KEYALIAS=neural_oficial
-          export APP_ANDROID_KEYSTORE_PASSWORD=neural2026
-          export APP_ANDROID_KEYALIAS_PASSWORD=neural2026
-          
-          yes | buildozer -v android release
+      - name: Build APK (Debug)
+        run: |
+          # Como você pediu para gerar um APK primeiro para testar, usamos 'android debug'
+          yes | buildozer -v android debug
 
-          # 3. ORGANIZAR OS ARQUIVOS FINAIS
+          # Organizar os arquivos finais para download
           mkdir -p bin_entrega
-          # Copia o AAB assinado (o Buildozer gera ele sem o "unsigned" no nome se a senha estiver certa)
-          cp bin/*.aab bin_entrega/NeuralFaceHD_FINAL_PLAYSTORE.aab
-          # Copia a sua chave mestra para você baixar e guardar
-          cp neuralface_oficial.keystore bin_entrega/
+          cp bin/*.apk bin_entrega/NeuralFaceHD_DEBUG.apk
         env:
           ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
 
@@ -65,6 +49,6 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: NeuralFaceHD-AAB-PLAYSTORE
+          name: NeuralFaceHD-APK-DEBUG
           path: bin_entrega/
       
