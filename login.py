@@ -228,13 +228,40 @@ class TelaLogin(Screen):
             pass
 
     def ir_para_registro(self):
+    try:
+        print("LOGIN: solicitando abertura da tela de cadastro...")
+
+        if not self.manager:
+            self._show_msg(
+                "Erro",
+                "Gerenciador de telas indisponível."
+            )
+            return
+
+        if not self.manager.has_screen("registro"):
+            print("LOGIN: tela registro não encontrada.")
+            self._show_msg(
+                "Erro",
+                "Tela de cadastro não encontrada."
+            )
+            return
+
+        print("LOGIN: abrindo tela de cadastro...")
+        self.manager.current = "registro"
+
+    except Exception as e:
+        print(
+            f"ERRO AO ABRIR CADASTRO: "
+            f"{type(e).__name__}: {e}"
+        )
+
         try:
-            if self.manager and self.manager.has_screen('registro'):
-                self.manager.current = 'registro'
-            else:
-                self._show_msg("Erro", "Tela de cadastro nao encontrada.")
-        except Exception as e:
-            self._show_msg("Erro", f"Falha ao abrir cadastro: {e}")
+            self._show_msg(
+                "Erro",
+                "Não foi possível abrir o cadastro."
+            )
+        except Exception:
+            pass
 
     def fazer_login(self, instance):
         print("Tentando login...")
@@ -274,20 +301,61 @@ class TelaLogin(Screen):
             self._show_msg("Erro", f"Falha no login: {e}")
 
     def resetar_senha(self, instance):
+    try:
+        print("LOGIN: recuperação de senha iniciada.")
+
         if not bd:
-            self._show_msg("Erro", "Recuperação indisponível.")
+            self._show_msg(
+                "Erro",
+                "Recuperação indisponível."
+            )
             return
 
-        if self.input_email.text:
-            try:
-                ok = bd.recuperar_senha(self.input_email.text.strip())
-                if ok:
-                    self._show_msg("Sucesso", "E-mail enviado.")
-                else:
-                    erro_real = getattr(bd, "ultimo_erro", "ERRO_DESCONHECIDO")
-                    self._show_msg("Erro", f"Falha ao enviar: {erro_real}")
-            except Exception as e:
-                print(f"Erro resetar senha: {e}")
-                self._show_msg("Erro", f"Falha ao enviar: {e}")
+        email = self.input_email.text.strip()
+
+        if not email:
+            self._show_msg(
+                "Aviso",
+                "Digite o e-mail."
+            )
+            return
+
+        print("LOGIN: enviando solicitação de recuperação...")
+
+        ok = bd.recuperar_senha(email)
+
+        if ok:
+            print("LOGIN: recuperação enviada com sucesso.")
+            self._show_msg(
+                "Sucesso",
+                "E-mail enviado."
+            )
         else:
-            self._show_msg("Aviso", "Digite o e-mail.")
+            erro_real = getattr(
+                bd,
+                "ultimo_erro",
+                "ERRO_DESCONHECIDO"
+            )
+
+            print(
+                f"LOGIN: recuperação falhou: {erro_real}"
+            )
+
+            self._show_msg(
+                "Erro",
+                f"Falha ao enviar: {erro_real}"
+            )
+
+    except Exception as e:
+        print(
+            f"ERRO RECUPERAR SENHA: "
+            f"{type(e).__name__}: {e}"
+        )
+
+        try:
+            self._show_msg(
+                "Erro",
+                "Falha ao processar a recuperação de senha."
+            )
+        except Exception:
+            pass
