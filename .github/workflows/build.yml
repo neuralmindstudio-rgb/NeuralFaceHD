@@ -53,8 +53,11 @@ jobs:
           echo "===== ARQUIVOS GERADOS ====="
           ls -lah bin/ || true
 
+          echo "===== ERROS ENCONTRADOS ====="
+          grep -inE "error:|error |ERROR|failed|FAILED|exception|traceback" build.log | tail -n 100 || true
+
           echo "===== FINAL DO LOG ====="
-          tail -n 500 build.log || true
+          tail -n 300 build.log || true
 
       - name: Salvar log
         if: always()
