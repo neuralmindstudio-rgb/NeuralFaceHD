@@ -6,7 +6,7 @@ package.domain = com.neuralmindstudio
 
 source.dir = .
 source.include_exts = py,png,jpg,jpeg,kv,atlas,json,onnx,keystore,ttf
-source.include_patterns = assets/,gfpgan/,.onnx,images/
+source.include_patterns = assets/*,gfpgan/*,*.onnx,images/*
 
 version = 1.0.1
 android.numeric_version = 169
@@ -18,7 +18,6 @@ android.permissions = INTERNET,CAMERA,ACCESS_NETWORK_STATE,READ_EXTERNAL_STORAGE
 
 android.api = 35
 android.minapi = 21
-android.sdk = 35
 android.ndk = 25b
 android.archs = arm64-v8a
 
@@ -29,7 +28,7 @@ android.copy_libs = 1
 
 android.python_version = 3.11
 
-requirements = python3,kivy==2.3.0,kivymd==1.1.1,requests,urllib3,certifi,pyrebase4,pycryptodome,cryptography,pillow>=9.5,<11,pyjnius
+requirements = python3==3.11.9,kivy==2.3.0,kivymd==1.1.1,requests,urllib3,certifi,pyrebase4,pycryptodome,cryptography,pillow>=9.5,<11,pyjnius
 
 p4a.bootstrap = sdl2
 
