@@ -34,10 +34,7 @@ jobs:
           rm -rf bin
           mkdir -p bin
 
-      - name: Fixar python-for-android compativel
-        run: |
-          mkdir -p .buildozer/android/platform
-          git clone --branch 2024.01.21 --depth 1 https://github.com/kivy/python-for-android.git .buildozer/android/platform/python-for-android
+      
 
       - name: Gerar APK
         env:
