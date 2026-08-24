@@ -1,7 +1,7 @@
 [app]
 
 title = Neural Face HD
-package.name = neuralfacepro
+package.name = neuralfacehd
 package.domain = com.neuralmindstudio
 
 source.dir = .
