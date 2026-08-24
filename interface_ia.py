@@ -187,7 +187,7 @@ class TelaPrincipal(Screen):
         def ajustar_layout_responsivo(*args):
             h = Window.height if Window.height > 100 else dp(640)
             self.barra_t.height = max(dp(72), min(dp(100), h * 0.11))
-            base_p = max(dp(200), min(dp(300), h * 0.30))
+            base_p = dp(220)
             try:
                 need = self._altura_necessaria_painel()
             except Exception:
@@ -225,10 +225,10 @@ class TelaPrincipal(Screen):
         self.painel = BoxLayout(
             orientation='vertical',
             size_hint=(1, None),
-            height=dp(240),
+            height=dp(220),
             padding=[dp(10), dp(5), dp(10), dp(5)],
             spacing=dp(5),
-            pos_hint={'x': 0, 'y': 0.02} 
+            pos_hint={'x': 0, 'y': 0.055} 
         )
 
         self.label_s = Label(
