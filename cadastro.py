@@ -1,6 +1,8 @@
 import threading
 from datetime import datetime
 import requests
+import os
+import traceback
 
 from kivy.uix.screenmanager import Screen
 from kivy.uix.scrollview import ScrollView
@@ -136,6 +138,56 @@ class TelaCadastro(Screen):
         self.scroll.add_widget(self.layout_conteudo)
         self.add_widget(self.scroll)
 
+    def registrar_erro(self, contexto, exc=None):
+        try:
+            from kivy.app import App
+
+            app = App.get_running_app()
+            pasta = app.user_data_dir if app else os.getcwd()
+
+            os.makedirs(pasta, exist_ok=True)
+
+            caminho = os.path.join(
+                pasta,
+                "crash.log"
+            )
+
+            with open(
+                caminho,
+                "a",
+                encoding="utf-8"
+            ) as arquivo:
+
+                arquivo.write(
+                    f"\n--- {datetime.now().isoformat()} | {contexto} ---\n"
+                )
+
+                if exc:
+                    arquivo.write(
+                        f"{type(exc).__name__}: {exc}\n"
+                    )
+                    arquivo.write(
+                        traceback.format_exc()
+                    )
+
+        except Exception:
+            pass
+
+    def mostrar_erro_seguro(self, titulo, mensagem):
+        try:
+            Clock.schedule_once(
+                lambda dt: MDDialog(
+                    title=titulo,
+                    text=str(mensagem)
+                ).open(),
+                0
+            )
+        except Exception as e:
+            self.registrar_erro(
+                "Falha ao mostrar diálogo de erro",
+                e
+            )
+
     def on_pre_enter(self, *args):
         Window.softinput_mode = "resize"
 
@@ -240,6 +292,12 @@ class TelaCadastro(Screen):
 
         except Exception as e:
             print(f"Erro cadastro completo: {e}")
+
+            self.registrar_erro(
+                "ERRO DURANTE CADASTRO/FIREBASE",
+                e
+            )
+
             erro_real = getattr(bd, "ultimo_erro", str(e))
             Clock.schedule_once(lambda dt: self.falha_cadastro(erro_real), 0.1)
 
