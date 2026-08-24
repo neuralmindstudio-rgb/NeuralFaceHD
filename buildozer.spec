@@ -28,9 +28,10 @@ android.copy_libs = 1
 
 android.python_version = 3.11
 
-requirements = python3==3.11.9,kivy==2.3.0,kivymd==1.1.1,requests,urllib3,certifi,pyrebase4,pycryptodome,cryptography,pillow>=9.5,<11,pyjnius
-
+p4a.branch = v2024.01.21
 p4a.bootstrap = sdl2
+
+requirements = python3==3.11.9,kivy==2.3.0,kivymd==1.1.1,requests,urllib3,certifi,pyrebase4,pycryptodome,cryptography,pillow>=9.5,<11,pyjnius
 
 icon.filename = logo.png
 presplash.filename = splash.png
