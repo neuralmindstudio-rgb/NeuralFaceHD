@@ -14,7 +14,7 @@ android.numeric_version = 169
 orientation = portrait
 fullscreen = 0
 
-android.permissions = INTERNET,CAMERA,ACCESS_NETWORK_STATE,READ_EXTERNAL_STORAGE,WRITE_EXTERNAL_STORAGE,READ_MEDIA_IMAGES
+android.permissions = INTERNET,ACCESS_NETWORK_STATE
 
 android.api = 35
 android.minapi = 21
