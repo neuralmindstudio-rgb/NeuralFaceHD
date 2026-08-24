@@ -120,27 +120,9 @@ class NeuralApp(MDApp):
         return self.sm
 
     def on_start(self):
-        if os.name == 'posix':
-            self.aplicar_wake_lock()
-
-            try:
-                from android.permissions import request_permissions, Permission
-
-                permissoes = [
-                    Permission.CAMERA,
-                    Permission.READ_EXTERNAL_STORAGE,
-                    Permission.WRITE_EXTERNAL_STORAGE,
-                ]
-
-                # Android mais novo
-                if hasattr(Permission, "READ_MEDIA_IMAGES"):
-                    permissoes.append(Permission.READ_MEDIA_IMAGES)
-
-                request_permissions(permissoes)
-                print("Permissões Android solicitadas")
-            except Exception as e:
-                print(f"Erro permissões Android: {e}")
-                traceback.print_exc()
+    if os.name == 'posix':
+        self.aplicar_wake_lock()
+        print("Aplicativo iniciado sem solicitar permissões de armazenamento.")
 
     def aplicar_wake_lock(self):
         try:
