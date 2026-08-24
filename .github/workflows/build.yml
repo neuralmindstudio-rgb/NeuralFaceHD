@@ -1,12 +1,10 @@
 name: Teste Neural Face HD
-
 on: workflow_dispatch
-
 jobs:
-teste:
-runs-on: ubuntu-22.04
-steps:
-- run: echo "YAML funcionando"
+  teste:
+    runs-on: ubuntu-22.04
+    steps:
+      - run: echo "YAML funcionando"
 
 
 
