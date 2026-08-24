@@ -1,11 +1,11 @@
 name: Build APK Neural Face HD
 
-on:
-  workflow_dispatch:
+on: workflow_dispatch
 
 jobs:
   build:
     runs-on: ubuntu-22.04
+
     steps:
       - name: Baixar projeto
         uses: actions/checkout@v4
@@ -34,20 +34,30 @@ jobs:
           rm -rf bin
           mkdir -p bin
 
+      - name: Fixar python-for-android compativel
+        run: |
+          mkdir -p .buildozer/android/platform
+          git clone --branch 2024.01.21 --depth 1 https://github.com/kivy/python-for-android.git .buildozer/android/platform/python-for-android
+
       - name: Gerar APK
         env:
           ANDROID_HOME: /usr/local/lib/android/sdk
           ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
+          ANDROID_NDK_ROOT: /home/runner/.buildozer/android/platform/android-ndk-r25b
         run: |
+          set -o pipefail
           buildozer -v android debug 2>&1 | tee build.log
+          BUILD_EXIT=${PIPESTATUS[0]}
+          exit $BUILD_EXIT
 
       - name: Mostrar resultado
         if: always()
         run: |
           echo "===== ARQUIVOS GERADOS ====="
           ls -lah bin/ || true
+
           echo "===== FINAL DO LOG ====="
-          tail -n 200 build.log || true
+          tail -n 500 build.log || true
 
       - name: Salvar log
         if: always()
