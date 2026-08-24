@@ -1,6 +1,6 @@
 name: Build APK - Neural Face HD
 
-on:
+'on':
 push:
 branches:
 - main
@@ -10,7 +10,6 @@ jobs:
 build:
 runs-on: ubuntu-22.04
 
-```
 steps:
   - name: Checkout
     uses: actions/checkout@v4
@@ -19,7 +18,7 @@ steps:
     uses: actions/setup-java@v4
     with:
       java-version: '17'
-      distribution: 'temurin'
+      distribution: temurin
 
   - name: Set up Python 3.11
     uses: actions/setup-python@v5
@@ -53,19 +52,13 @@ steps:
   - name: Show build result
     if: always()
     run: |
-      echo "======================================"
       echo "ARQUIVOS GERADOS"
-      echo "======================================"
       ls -lah bin/ || true
       echo ""
-      echo "======================================"
       echo "ULTIMAS 150 LINHAS DO LOG"
-      echo "======================================"
       tail -n 150 build.log || true
       echo ""
-      echo "======================================"
       echo "ERROS ENCONTRADOS"
-      echo "======================================"
       grep -iE "error|exception|failed|failure|traceback" build.log | tail -n 100 || true
 
   - name: Upload APK
@@ -82,7 +75,6 @@ steps:
     with:
       name: NeuralFaceHD-Build-Log
       path: build.log
-```
 
 
 
