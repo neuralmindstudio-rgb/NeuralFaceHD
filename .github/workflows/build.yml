@@ -1,4 +1,5 @@
-name: Build APK e AAB - Neural Face HD
+```yaml
+name: Build APK - Neural Face HD
 
 on:
   push:
@@ -10,7 +11,8 @@ jobs:
     runs-on: ubuntu-22.04
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
       - name: Set up JDK 17
         uses: actions/setup-java@v4
@@ -23,34 +25,63 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Install dependencies
+      - name: Install system dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential libffi-dev python3-dev
-          python -m pip install --upgrade pip
-          pip install buildozer cython==0.29.33 setuptools appdirs packaging colorama jinja2 six toml sh build wheel
+          sudo apt-get install -y \
+            build-essential \
+            libffi-dev \
+            libssl-dev \
+            python3-dev \
+            zip \
+            unzip
 
-      - name: Force Clean Cache & Old Builds
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install \
+            buildozer \
+            cython==0.29.33 \
+            setuptools \
+            appdirs \
+            packaging \
+            colorama \
+            jinja2 \
+            six \
+            toml \
+            sh \
+            build \
+            wheel
+
+      - name: Clean previous build
         run: |
           rm -rf .buildozer
-          rm -rf bin/
+          rm -rf bin
+          mkdir -p bin
 
-      - name: Build App (Debug APK ou Release AAB)
-        run: |
-          # Executa o buildozer (lembrando que no seu spec está setado para aab, ou mude se preferir apk)
-          yes | buildozer -v android debug
+      - name: Build APK
         env:
           ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
+          ANDROID_HOME: /usr/local/lib/android/sdk
+        run: |
+          buildozer -v android debug
 
-      - name: List files in bin to debug
+      - name: Show generated files
         if: always()
         run: |
-          ls -la bin/ || true
+          echo "===== BIN ====="
+          ls -lah bin/ || true
 
-      - name: Upload Artifact
-        if: always()
+          echo "===== BUILD RESULT ====="
+          find bin -maxdepth 2 -type f -print || true
+
+      - name: Upload APK
+        if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: NeuralFaceHD-Binarios
-          path: bin/
+          name: NeuralFaceHD-APK
+          path: bin/*.apk
+          if-no-files-found: error
+```
+
       
