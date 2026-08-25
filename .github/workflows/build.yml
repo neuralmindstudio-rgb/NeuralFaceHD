@@ -21,7 +21,7 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Instalar dependencias do sistema
+      - name: Instalar dependencias
         run: |
           sudo apt-get update
           sudo apt-get install -y \
@@ -32,7 +32,22 @@ jobs:
             zip \
             unzip \
             git \
-            pkg-config
+            ccache
+
+          python -m pip install --upgrade pip
+
+          pip install \
+            "setuptools<70" \
+            "cython==0.29.36" \
+            buildozer \
+            appdirs \
+            packaging \
+            colorama \
+            jinja2 \
+            six \
+            toml \
+            sh \
+            wheel
 
       - name: Instalar dependencias Python
         run: |
