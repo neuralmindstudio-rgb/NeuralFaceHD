@@ -76,27 +76,26 @@ jobs:
         run: |
           set -o pipefail
 
-          buildozer -v android debug 2>&1 | tee build.log
+          echo "===== PRIMEIRA TENTATIVA ====="
+
+          if buildozer -v android debug 2>&1 | tee build.log; then
+            echo "APK gerado com sucesso na primeira tentativa."
+            exit 0
+          fi
+
+          echo ""
+          echo "===== PRIMEIRA TENTATIVA FALHOU ====="
+          echo "Aguardando 15 segundos antes de tentar novamente..."
+          sleep 15
+
+          echo ""
+          echo "===== SEGUNDA TENTATIVA ====="
+
+          buildozer -v android debug 2>&1 | tee -a build.log
 
           BUILD_EXIT=${PIPESTATUS[0]}
 
           exit $BUILD_EXIT
-
-      - name: Mostrar resultado
-        if: always()
-        run: |
-          echo "===== ARQUIVOS GERADOS ====="
-          ls -lah bin/ || true
-
-          echo ""
-          echo "===== ERROS ENCONTRADOS ====="
-          grep -inE \
-            "error:|error |ERROR|failed|FAILED|exception|traceback" \
-            build.log | tail -n 150 || true
-
-          echo ""
-          echo "===== FINAL DO LOG ====="
-          tail -n 300 build.log || true
 
       - name: Salvar log
         if: always()
